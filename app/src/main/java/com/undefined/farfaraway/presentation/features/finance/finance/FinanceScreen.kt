@@ -1,0 +1,19 @@
+package com.undefined.farfaraway.presentation.features.finance.finance
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
+
+@Composable
+fun FinanceScreen(
+    navController: NavController
+) {
+    Scaffold(
+        content = { innerPadding ->
+            FinanceContent(paddingValues = innerPadding, navController = navController)
+        }
+    )
+    FinanceView(modifier = Modifier.fillMaxSize(), navController = navController)
+}

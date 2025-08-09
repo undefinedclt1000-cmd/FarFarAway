@@ -1,0 +1,19 @@
+package com.undefined.farfaraway.presentation.features.profile.config
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
+
+@Composable
+fun ProfileConfigScreen(
+    navController: NavController
+) {
+    Scaffold(
+        content = { innerPadding ->
+            ProfileConfigContent(paddingValues = innerPadding, navController = navController)
+        }
+    )
+    ProfileConfigView(modifier = Modifier.fillMaxSize(), navController = navController)
+}

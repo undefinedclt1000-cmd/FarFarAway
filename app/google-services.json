@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "916583193732",
+    "project_id": "farfaraway-app",
+    "storage_bucket": "farfaraway-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:916583193732:android:4dbde1e8ac84fefd4cf6d1",
+        "android_client_info": {
+          "package_name": "com.undefined.farfaraway"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAE-2MwgceBtLZQccm0V8cBQvET9MTx6A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
