@@ -1,3 +1,134 @@
 <resources>
     <string name="app_name">FarFarAway</string>
+
+    <!-- StringResources constant -->
+    <string name="continue_text">Continuar</string>
+    <string name="back_text">Regresar</string>
+
+    <!-- StringResources for chat -->
+    <string name="chats_card_tittle">¡No hay nada aquí!</string>
+    <string name="chats_card_description">Aqui apareceran tus chats con los propietarios de las rentas.</string>
+    <string name="chats_card_Search">Buscar</string>
+
+    <!-- StringResources for Auth -->
+    <string name="welcome_title">Bienvenido a U-Life</string>
+    <string name="welcome_body">Iniciar sesión</string>
+    <string name="auth_login_title">Iniciar sesión</string>
+    <string name="auth_login_email">Correo electrónico</string>
+    <string name="auth_login_password">Contraseña</string>
+    <string name="auth_register_title">Regístrate</string>
+    <string name="auth_error_login">Error al iniciar sesión</string>
+    <string name="auth_success_login">Inicio de sesión exitoso"</string>
+    <string name="auth_error_register">Error al registrarse</string>
+    <string name="auth_success_register">Registro exitoso"</string>
+    <string name="auth_register_name">Nombre</string>
+    <string name="auth_register_confirm_password">Confirmar contraseña</string>
+    <string name="auth_no_account">¿No tienes una cuenta? </string>
+    <string name="auth_already_account">Ya tengo una cuenta y quiero </string>
+    <string name="auth_login_dialog">Iniciar Sesión</string>
+    <string name="auth_register_first_name">Nombre</string>
+    <string name="auth_register_last_name">Apellido</string>
+    <string name="auth_register_age">Edad</string>
+    <string name="auth_register_phone">Teléfono</string>
+
+
+    <!-- Strings para Login -->
+    <string name="welcome_back_title">¡Bienvenido de nuevo!</string>
+    <string name="welcome_back_body">Inicia sesión para continuar</string>
+    <string name="auth_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="auth_register_dialog">Regístrate aquí</string>
+
+    <!-- Reset password -->
+    <string name="auth_reset_password_title">Recuperar Contraseña</string>
+    <string name="auth_reset_password_body">Ingresa tu correo electrónico para recibir instrucciones de recuperación</string>
+    <string name="send_text">Enviar</string>
+    <string name="cancel_text">Cancelar</string>
+
+    <!-- Messages -->
+    <string name="auth_success_reset">Se ha enviado un correo de recuperación</string>
+
+
+
+    <string name="auth_dialog_cancel">Cancelar</string>
+    <string name="auth_dialog_confirm">Aceptar</string>
+    <string name="auth_dialog_tittle">¡Necesitas una cuenta!</string>
+    <string name="auth_dialog_body">Para poder acceder a estas funciones tienes que iniciar sesion o registrarte</string>
+    <string name="auth_verify_alert_title">Verificación de identidad</string>
+    <string name="auth_verify_alert_body">Te pediremos más datos para comprobar tu identidad.</string>
+    <string name="auth_user_type_owner_title">Arrendador</string>
+    <string name="auth_user_type_owner_body">Si eres propietario de inmuebles y deseas arrendar tu propiedad.</string>
+    <string name="auth_user_type_student_title">Estudiante</string>
+    <string name="auth_user_type_student_body">Si eres estudiante buscando una propiedad para alquilar.</string>
+
+    <!--StringResources for LogOut-->
+    <string name="logout_Text">Cerrar Sesion</string>
+
+    <!-- StringResources for Validations -->
+    <string name="val_email_empty">El email no debe de estar vacio</string>
+    <string name="val_email_invalid">El email no es valido</string>
+    <string name="val_password_empty">La contraseña no debe estar vacía.</string>
+    <string name="val_password_invalid">La contraseña debe contener una letra mayúscula, una minúscula, un número, un caracter especial y tener mínimo 8 caracteres.</string>
+    <string name="val_text_empty">El campo no puede estar vacio.</string>
+    <string name="val_text_invalid">No debe de haber espacios en blanco al principio.</string>
+    <string name="val_password_match">Las contraseñas no coinciden</string>">
+
+    <!-- StringResources for permissions-->
+    <string name="permissions_location_title">Por favor, otorga los permisos de ubicación.</string>
+    <string name="permissions_location">U-life, necesita tu ubicacion para las funciones principales de la aplicacion</string>
+    <string name="permissions_camera_title">Por favor, otorga los permisos de camara.</string>
+    <string name="permissions_camera">U-life, necesita tu camara para escanear tu documentacion</string>
+
+    <string name="permissions_generic_button">Otorgar permisos</string>"
+
+    <!--StringResources for profileScreen-->
+    <string name="notification_option_title">Notificaciones de la aplicación</string>
+    <string name="notification_option_body">Cuando están activas podemos enviarte notificaciones sobre rentas cercanas con tus últimos intereses.</string>
+    <string name="verify_title">Verificar Perfil</string>
+    <string name="student_verify_body">Verifica que eres estudiante para tener acceso a todas las funciones</string>
+    <string name="owner_verify_body">Verifica que eres dueño de una propiedad para tener acceso a todas las funciones</string>
+    <string name="Info_option_title">Información de la aplicación</string>
+    <string name="Info_option_body">Esta aplicación está hecha por @LyonsTeam. Versión de la app: 2.0.0</string>
+    <string name="Crash_Error_title">¿Todo bien?</string>
+    <string name="Crash_Error_body">"Reporta un problema que haya ocurrido en la app."</string>
+
+    <!-- StringResources for permissions-->
+    <string name="bottom_sheet_restrictions">Restricciones</string>
+    <string name="bottom_sheet_services">Servicios incluidos</string>
+    <string name="bottom_sheet_images">Imágenes</string>
+
+
+    <!-- StringResources for addProperty-->
+    <string name="add_property_title">Registra una propiedad</string>
+    <string name="add_property_description">Cuentanos mas acerca de que es lo que rentas</string>
+    <string name="property_name">Nombre de la propiedad</string>
+    <string name="property_address">Direccion</string>
+    <string name="property_price">Renta mensual</string>
+    <string name="property_description">Descripcion</string>
+    <string name="property_type">Tipo de propiedad</string>
+    <string name="property_facilities_title">Amenidades</string>
+    <string name="property_facilities_body">Agrega Amenidades</string>
+    <string name="property_restrictions_title">Restricciones</string>
+    <string name="property_restrictions_body">Agrega Restricciones</string>
+    <string name="property_images">Agrega imagenes</string>
+    <string name="property_save">Guardar</string>
+    <string name="property_next">Siguiente</string>
+    <string name="property_cancel">Cancelar</string>
+    <string name="property_back">Regresar</string>
+    <string name="property_success_title">Propiedad Agregada</string>
+    <string name="property_success_body">La propiedad se ha agregado correctamente.</string>"
+    <string name="property_error_title">Ha ocurrido un problema</string>
+    <string name="property_error_body">Ocurrio un error al intentar subir esta propiedad, por favor intenta mas tarde</string>
+
+
+
+    <!-- Generic StringResources for Services-->
+    <string name="generic_error_1">Ocurrio un error al obtener la informacion solicitada</string>"
+
+
+    <!--Generic StringResources for Verification-->
+    <string name="verification_title">Bienvenido al centro de verificación de U-life</string>
+    <string name="verification_description">En U-life nos queremos asegurar de que todos nuestros usuarios cumplas con nuestras normas para garantizar una comunidad solidaria y confiable</string>
+    <string name="verification_dialog_title">Usuario Verificado</string>"
+    <string name="verification_dialog_description">Gracias por ayudarnos a ser U-life una experiencia más agradable</string>
+
 </resources>

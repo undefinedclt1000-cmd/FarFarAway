@@ -31,14 +31,17 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
         freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -59,75 +62,67 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.play.services.location)
-    implementation(libs.firebase.firestore.ktx)
     kapt(libs.hilt.compiler)
 
     // Room
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
 
-    implementation (libs.androidx.hilt.navigation.compose.v110)
-    implementation (libs.androidx.navigation.compose.v277)
+    implementation(libs.androidx.hilt.navigation.compose.v110)
+    implementation(libs.androidx.navigation.compose.v277)
 
-    //DataStore
-    implementation (libs.androidx.datastore.preferences.v100)
+    // DataStore
+    implementation(libs.androidx.datastore.preferences.v100)
 
-    // livedata
-    implementation (libs.androidx.runtime.livedata)
+    // LiveData
+    implementation(libs.androidx.runtime.livedata)
 
-    //Icons
-    implementation (libs.androidx.material.icons.extended.v178)
+    // Icons
+    implementation(libs.androidx.material.icons.extended.v178)
 
-    //Google fonts
-    implementation (libs.androidx.ui.text.google.fonts)
+    // Google fonts
+    implementation(libs.androidx.ui.text.google.fonts)
 
+    // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
 
-    //Firebase
+    // Firebase (usando BoM para manejar versiones)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.database)
+    implementation("com.google.firebase:firebase-firestore")
 
-    //Debug
-    implementation (libs.androidx.ui)
-    debugImplementation (libs.androidx.ui.tooling)
+    // Debug
+    implementation(libs.androidx.ui)
+    debugImplementation(libs.androidx.ui.tooling)
 
-    //Weareable
-    implementation (libs.play.services.wearable)
+    // Wear OS
+    implementation(libs.play.services.wearable)
 
-    //Cart Compose
-    implementation (libs.compose.charts)
+    // Chart Compose
+    implementation(libs.compose.charts)
 
-    implementation (libs.retrofit)
-    implementation (libs.converter.gson)
+    // Retrofit + Gson
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 
-    //Wear
-    //implementation(libs.play.services.wearable.v1810)
-
-
-    //implementation(libs.retrofit.v290)
-    //implementation(libs.converter.gson.v290)
-
+    // OkHttp
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
-    // Core Utility Library
+    // Google Maps Utils
     implementation("com.google.maps.android:android-maps-utils:3.12.0")
+    implementation("com.google.maps.android:maps-utils-ktx:5.2.0")
 
-    // Kotlin Extensions for Utility Library
-    implementation("com.google.maps.android:maps-utils-ktx:5.2.0") // officially supported :contentReference[oaicite:1]{index=1}
-
-    // Jetpack Compose map UI components
+    // Jetpack Compose Maps UI
     implementation("com.google.maps.android:maps-compose:6.7.0")
 
+    // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
+    // Coil para imágenes
     implementation("io.coil-kt:coil-compose:2.5.0")
-
-    implementation ("com.google.firebase:firebase-bom:33.0.0") // Use the latest version
-
-
 }
 
 kapt {

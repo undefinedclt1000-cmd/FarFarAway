@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,6 +19,7 @@ import com.undefined.farfaraway.presentation.shared.navigation.enums.Routes
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.undefined.farfaraway.presentation.shared.navigation.mainRoutes
+import com.undefined.farfaraway.presentation.shared.vm.LoginCheckViewModel
 
 
 @Composable
@@ -24,10 +27,22 @@ fun MainScreen(
 
 ) {
     val viewModel: MainScreenViewModel = hiltViewModel()
+    val loginViewModel: LoginCheckViewModel = hiltViewModel()
+
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isVisible = remember { mutableStateOf(true) }
+
+    val navigateToLogin by loginViewModel.navigateToLogin.collectAsState()
+
+    LaunchedEffect(navigateToLogin) {
+        if (navigateToLogin) {
+            navController.navigate(Routes.LOGIN.name) {
+                popUpTo(Routes.LOGIN.name) { inclusive = true }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
