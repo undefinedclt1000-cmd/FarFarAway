@@ -37,6 +37,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+        freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
     }
     buildFeatures {
         compose = true
@@ -58,6 +59,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.play.services.location)
+    implementation(libs.firebase.firestore.ktx)
     kapt(libs.hilt.compiler)
 
     // Room
@@ -120,6 +122,11 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:6.7.0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    implementation ("com.google.firebase:firebase-bom:33.0.0") // Use the latest version
+
 
 }
 
