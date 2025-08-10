@@ -36,7 +36,7 @@ val navigationItems = listOf(
     ),
     NavigationItems(
         title = "Rutas",
-        route = Routes.ROUTES.name,
+        route = Routes.SCHOOL.name,
         selectedIcon = Icons.Filled.DirectionsBus,
         unselectedIcon = Icons.Outlined.DirectionsBus,
         hasNews = false
@@ -53,13 +53,6 @@ val navigationItems = listOf(
         route = Routes.FINANCE.name,
         selectedIcon = Icons.Filled.AccountBalanceWallet,
         unselectedIcon = Icons.Outlined.AccountBalanceWallet,
-        hasNews = false
-    ),
-    NavigationItems(
-        title = "Perfil",
-        route = Routes.PROFILE.name,
-        selectedIcon = Icons.Filled.AccountCircle,
-        unselectedIcon = Icons.Outlined.AccountCircle,
         hasNews = false
     )
 )

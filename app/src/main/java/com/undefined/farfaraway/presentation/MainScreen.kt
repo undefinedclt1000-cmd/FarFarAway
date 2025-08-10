@@ -31,7 +31,15 @@ fun MainScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(visible = viewModel.verifyRouteTop(currentRoute = currentRoute))
+            TopAppBar(
+                visible = viewModel.verifyRouteTop(currentRoute = currentRoute),
+                onNotificationClick = {
+                    navController.navigate(Routes.NOTIFICATIONS.name)
+                },
+                onProfileClick = {
+                    navController.navigate(Routes.PROFILE.name)
+                }
+            )
         },
         bottomBar = {
             BottomNavBar(
