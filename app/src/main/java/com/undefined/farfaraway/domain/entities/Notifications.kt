@@ -2,7 +2,6 @@ package com.undefined.farfaraway.domain.entities
 
 import com.google.firebase.database.PropertyName
 
-
 data class Notification(
     @get:PropertyName("id") val id: String = "",
     @get:PropertyName("user_id") val userId: String = "",
@@ -13,10 +12,13 @@ data class Notification(
     @get:PropertyName("image_url") val imageUrl: String = "",
     @get:PropertyName("is_read") val isRead: Boolean = false,
     @get:PropertyName("action_url") val actionUrl: String = "",
-    @get:PropertyName("sender_name") val senderName: String = "", // Para notificaciones de otros usuarios
-    @get:PropertyName("sender_image") val senderImage: String = "", // Para notificaciones de otros usuarios
+    @get:PropertyName("sender_name") val senderName: String = "",
+    @get:PropertyName("sender_image") val senderImage: String = "",
+    @get:PropertyName("created_at") val createdAt: Long = System.currentTimeMillis(),
+    @get:PropertyName("priority") val priority: Int = 0, // 0=normal, 1=alta, 2=urgente
+    @get:PropertyName("category") val category: String = "general" // Para agrupar notificaciones
 ) {
-    constructor() : this("", "", "", "", NotificationType.GENERAL.name, "", "", false, "", "", "")
+    constructor() : this("", "", "", "", NotificationType.GENERAL.name, "", "", false, "", "", "", System.currentTimeMillis(), 0, "general")
 }
 
 enum class NotificationType {
@@ -32,4 +34,19 @@ enum class NotificationType {
     SYSTEM_UPDATE,       // Actualización del sistema
     WELCOME,             // Mensaje de bienvenida
     GENERAL              // Notificación general
+}
+
+enum class NotificationPriority(val value: Int) {
+    NORMAL(0),
+    HIGH(1),
+    URGENT(2)
+}
+
+enum class NotificationCategory(val displayName: String) {
+    GENERAL("General"),
+    SOCIAL("Social"),
+    PROPERTIES("Propiedades"),
+    EXPENSES("Gastos"),
+    SYSTEM("Sistema"),
+    ROUTES("Rutas")
 }
