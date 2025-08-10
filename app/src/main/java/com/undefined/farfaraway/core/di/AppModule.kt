@@ -2,8 +2,14 @@ package com.undefined.farfaraway.core.di
 
 import com.google.firebase.auth.FirebaseAuth
 import com.undefined.farfaraway.domain.interfaces.IAuthRepository
+import com.undefined.farfaraway.domain.interfaces.IUserRepository
 import com.undefined.farfaraway.domain.repository.AuthRepositoryImpl
 import com.undefined.farfaraway.domain.repository.DataStoreRepositoryImpl
+import com.undefined.farfaraway.domain.repository.UserRepositoryImpl
+import com.undefined.farfaraway.domain.useCases.GetUserProfileUseCase
+import com.undefined.farfaraway.domain.useCases.GetUserReviewsUseCase
+import com.undefined.farfaraway.domain.useCases.UpdateUserProfileUseCase
+import com.undefined.farfaraway.domain.useCases.UserProfileUseCases
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,7 +38,9 @@ object AppModule {
             setDataBoolean = SetDataBoolean(dataStoreRepository),
             getDataBoolean = GetDataBoolean(dataStoreRepository),
             setDataInt = SetDataInt(dataStoreRepository),
-            getDataInt = GetDataInt(dataStoreRepository)
+            getDataInt = GetDataInt(dataStoreRepository),
+            getDouble = com.undefined.farfaraway.domain.useCases.dataStore.GetDouble(dataStoreRepository),
+            setDouble = com.undefined.farfaraway.domain.useCases.dataStore.SetDouble(dataStoreRepository)
         )
 
     @Provides
@@ -44,6 +52,20 @@ object AppModule {
     @Singleton
     @Provides
     fun provideAuthRepository(): IAuthRepository = AuthRepositoryImpl()
+
+    @Singleton
+    @Provides
+    fun provideUserRepository(): IUserRepository = UserRepositoryImpl()
+
+
+    @Provides
+    fun provideUserProfileUseCases(repository: IUserRepository): UserProfileUseCases = (
+            UserProfileUseCases(
+                getUserProfile = GetUserProfileUseCase(repository),
+                getUserReviews = GetUserReviewsUseCase(repository),
+                updateUserProfile = UpdateUserProfileUseCase(repository)
+            )
+            )
 
 
     // Auth Use Cases

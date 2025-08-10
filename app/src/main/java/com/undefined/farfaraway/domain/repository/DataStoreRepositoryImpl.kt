@@ -42,4 +42,6 @@ class DataStoreRepositoryImpl @Inject constructor(
     suspend fun getDouble(key: String): Double {
         return _dataStoreService.getDouble(key)
     }
+
+
 }

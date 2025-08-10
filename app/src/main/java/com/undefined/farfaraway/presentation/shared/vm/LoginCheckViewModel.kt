@@ -65,12 +65,20 @@ class LoginCheckViewModel @Inject constructor(
 
     private fun setDataStoreInfo(user: User, email: String) = viewModelScope.launch {
         _dataStoreUseCases.setDataString(Constants.USER_UID, user.id)
-        _dataStoreUseCases.setDataString(Constants.USER_NAME, "${user.firstName} ${user.lastName}".trim())
-        _dataStoreUseCases.setDataInt(Constants.USER_AGE, user.age)
+        _dataStoreUseCases.setDataString(Constants.USER_FIRST_NAME, user.firstName)
+        _dataStoreUseCases.setDataString(Constants.USER_LAST_NAME, user.lastName)
         _dataStoreUseCases.setDataString(Constants.USER_EMAIL, user.email.ifEmpty { email })
-        // Solo campos presentes en User, sin los que no tienes aún:
-        // No guardamos sex, birthDate, height, weight, etc. porque no están en User
+        _dataStoreUseCases.setDataInt(Constants.USER_AGE, user.age)
+        _dataStoreUseCases.setDataString(Constants.USER_PROFILE_IMAGE_URL, user.profileImageUrl)
+        _dataStoreUseCases.setDataString(Constants.USER_PHONE_NUMBER, user.phoneNumber)
+        _dataStoreUseCases.setDataBoolean(Constants.USER_IS_EMAIL_VERIFIED, user.isEmailVerified)
+        _dataStoreUseCases.setDataString(Constants.USER_TYPE, user.userType)
+        _dataStoreUseCases.setDataString(Constants.USER_UNIVERSITY_ID, user.universityId)
+        _dataStoreUseCases.setDouble(Constants.USER_AVERAGE_RATING, user.averageRating)
+        _dataStoreUseCases.setDataInt(Constants.USER_TOTAL_REVIEWS, user.totalReviews)
+        _dataStoreUseCases.setDataBoolean(Constants.USER_IS_ACTIVE, user.isActive)
     }
+
 
 
     fun resetInitialState() {

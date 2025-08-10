@@ -6,5 +6,7 @@ data class DataStoreUseCases(
     val setDataBoolean: SetDataBoolean,
     val getDataBoolean: GetDataBoolean,
     val setDataInt: SetDataInt,
-    val getDataInt: GetDataInt
+    val getDataInt: GetDataInt,
+    val setDouble: SetDouble,
+    val getDouble: GetDouble,
 )
