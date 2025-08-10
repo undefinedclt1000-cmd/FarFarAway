@@ -10,7 +10,7 @@ class MainScreenViewModel @Inject constructor(
 ): ViewModel() {
 
     fun verifyRouteTop(currentRoute: String?): Boolean {
-        return !(currentRoute == Routes.LOGIN.name || currentRoute == Routes.SIGN_UP.name)
+        return !(currentRoute == Routes.LOGIN.name || currentRoute == Routes.SIGN_UP.name || currentRoute == Routes.MY_PROFILE.name)
     }
 
     fun verifyRouteBottom(currentRoute: String?): Boolean {

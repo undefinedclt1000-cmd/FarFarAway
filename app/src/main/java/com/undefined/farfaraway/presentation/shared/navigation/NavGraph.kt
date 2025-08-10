@@ -10,6 +10,7 @@ import com.undefined.farfaraway.presentation.features.finance.finance.FinanceScr
 import com.undefined.farfaraway.presentation.features.home.HomeScreen
 import com.undefined.farfaraway.presentation.features.notifications.NotificationsScreen
 import com.undefined.farfaraway.presentation.features.profile.config.ProfileConfigScreen
+import com.undefined.farfaraway.presentation.features.profile.myprofile.MyProfileScreen
 import com.undefined.farfaraway.presentation.features.profile.profile.ProfileScreen
 import com.undefined.farfaraway.presentation.features.rents.RentsScreen
 import com.undefined.farfaraway.presentation.features.routes.RoutesScreen
@@ -24,6 +25,7 @@ fun NavGraphBuilder.mainRoutes(navController: NavController) {
 
     composable(Routes.CONFIG_PROFILE.name) { ProfileConfigScreen(navController) }
     composable(Routes.PROFILE.name) { ProfileScreen(navController) }
+    composable(Routes.MY_PROFILE.name) { MyProfileScreen(navController) }
 
     composable(Routes.FINANCE.name) { FinanceScreen(navController) }
     composable(Routes.BILLS.name) { BillsScreen(navController) }

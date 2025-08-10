@@ -43,8 +43,7 @@ fun ProfileContent(
     if (isLoading) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+                .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator()
@@ -53,7 +52,6 @@ fun ProfileContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -61,7 +59,7 @@ fun ProfileContent(
             ProfileHeader(
                 user = currentUser,
                 onViewFullProfile = {
-                    /*navController.navigate(Routes.MY_PROFILE.name)*/
+                    navController.navigate(Routes.MY_PROFILE.name)
                 }
             )
 
@@ -91,7 +89,7 @@ fun ProfileContent(
                     icon = Icons.Outlined.Person,
                     title = "Mi perfil completo",
                     subtitle = "Ver mi perfil como lo ven otros usuarios",
-                    onClick = { /*navController.navigate(Routes.MY_PROFILE.name)*/ }
+                    onClick = { navController.navigate(Routes.MY_PROFILE.name) }
                 )
             }
 

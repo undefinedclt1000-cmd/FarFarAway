@@ -14,6 +14,7 @@ enum class Routes {
 
     CONFIG_PROFILE,
     PROFILE,
+    MY_PROFILE,
 
     RENTS,
 
