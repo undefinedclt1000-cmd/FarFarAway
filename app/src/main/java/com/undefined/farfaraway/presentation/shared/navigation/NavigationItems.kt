@@ -36,7 +36,7 @@ val navigationItems = listOf(
     ),
     NavigationItems(
         title = "Rutas",
-        route = Routes.SCHOOL.name,
+        route = Routes.ROUTES.name,
         selectedIcon = Icons.Filled.DirectionsBus,
         unselectedIcon = Icons.Outlined.DirectionsBus,
         hasNews = false

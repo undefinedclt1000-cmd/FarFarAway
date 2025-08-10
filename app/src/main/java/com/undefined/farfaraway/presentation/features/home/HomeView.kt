@@ -19,8 +19,10 @@ fun HomeView (
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopStart
     ) {
+        // Aquí puedes agregar elementos que se superpongan al contenido principal
+        // Por ejemplo: loading indicators, floating action buttons, etc.
 
-        //GenericProgressLinearIndicator()
-
+        // Si necesitas un indicador de progreso, descomenta la siguiente línea:
+        // GenericProgressLinearIndicator()
     }
 }

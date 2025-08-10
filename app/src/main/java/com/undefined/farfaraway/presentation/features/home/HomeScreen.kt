@@ -15,5 +15,7 @@ fun HomeScreen(
             HomeContent(paddingValues = innerPadding, navController = navController)
         }
     )
-    HomeView(modifier = Modifier.fillMaxSize(), navController = navController)
+
+    // Si necesitas elementos superpuestos, usa HomeView aquí
+    // HomeView(modifier = Modifier.fillMaxSize(), navController = navController)
 }
