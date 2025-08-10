@@ -17,7 +17,8 @@ class MainScreenViewModel @Inject constructor(
                         currentRoute == Routes.FINANCE.name ||
                         currentRoute == Routes.BILLS.name ||
                         currentRoute == Routes.BILLS.name ||
-                        currentRoute == Routes.NOTIFICATIONS.name
+                        currentRoute == Routes.NOTIFICATIONS.name ||
+                        currentRoute == Routes.ROUTES.name
                 )
     }
 
