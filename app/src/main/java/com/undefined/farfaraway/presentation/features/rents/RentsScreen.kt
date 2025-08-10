@@ -11,9 +11,12 @@ fun RentsScreen(
     navController: NavController
 ) {
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         content = { innerPadding ->
-            RentsContent(paddingValues = innerPadding, navController = navController)
+            RentsContent(
+                paddingValues = innerPadding,
+                navController = navController
+            )
         }
     )
-    RentsView(modifier = Modifier.fillMaxSize(), navController = navController)
 }
