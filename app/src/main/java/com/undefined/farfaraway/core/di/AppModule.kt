@@ -1,6 +1,8 @@
 package com.undefined.farfaraway.core.di
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.undefined.farfaraway.BuildConfig
 import com.undefined.farfaraway.domain.interfaces.IAuthRepository
 import com.undefined.farfaraway.domain.interfaces.IUserRepository
 import com.undefined.farfaraway.domain.repository.AuthRepositoryImpl
@@ -46,17 +48,32 @@ object AppModule {
     @Provides
     @Singleton
     fun provideFirebaseAuth(): FirebaseAuth {
-        return FirebaseAuth.getInstance()
+        val firebaseAuth = FirebaseAuth.getInstance()
+
+        // Deshabilitar verificaciones para desarrollo
+        if (BuildConfig.DEBUG) {
+            firebaseAuth.firebaseAuthSettings.setAppVerificationDisabledForTesting(true)
+        }
+
+        return firebaseAuth
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseFirestore(): FirebaseFirestore {
+        return FirebaseFirestore.getInstance()
     }
 
     @Singleton
     @Provides
-    fun provideAuthRepository(): IAuthRepository = AuthRepositoryImpl()
+    fun provideAuthRepository(
+        firebaseAuth: FirebaseAuth,
+        firestore: FirebaseFirestore
+    ): IAuthRepository = AuthRepositoryImpl(firebaseAuth, firestore)
 
     @Singleton
     @Provides
     fun provideUserRepository(): IUserRepository = UserRepositoryImpl()
-
 
     @Provides
     fun provideUserProfileUseCases(repository: IUserRepository): UserProfileUseCases = (
@@ -67,7 +84,6 @@ object AppModule {
             )
             )
 
-
     // Auth Use Cases
     @Provides
     fun provideAuthUseCases(repository: IAuthRepository): FireAuthUseCases =
@@ -76,5 +92,4 @@ object AppModule {
             loginUser = LoginUser(repository),
             getUser = com.undefined.farfaraway.domain.useCases.firebase.GetUser(repository)
         )
-
 }

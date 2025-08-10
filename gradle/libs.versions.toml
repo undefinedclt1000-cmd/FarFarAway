@@ -1,6 +1,6 @@
 [versions]
 # Versiones principales
-agp = "8.11.1"
+agp = "8.10.1"
 composeCharts = "0.1.7"
 converterGson = "3.0.0"
 datastorePreferencesVersion = "1.1.7"

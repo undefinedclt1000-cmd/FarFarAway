@@ -123,6 +123,8 @@ dependencies {
 
     // Coil para imágenes
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+
 }
 
 kapt {
