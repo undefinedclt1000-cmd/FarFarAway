@@ -109,10 +109,9 @@ fun HomeContent(
 
         // Categorías rápidas
         item {
-            QuickCategories(
-                onCategoryClick = viewModel::onCategoryClick
-            )
+            QuickCategories(navController = navController)
         }
+
 
         // Propiedades destacadas
         if (featuredProperties.isNotEmpty()) {
@@ -233,7 +232,7 @@ fun SearchHeader(
 
 @Composable
 fun QuickCategories(
-    onCategoryClick: (QuickCategory) -> Unit
+    navController: NavController
 ) {
     Column {
         Text(
@@ -253,7 +252,7 @@ fun QuickCategories(
             items(QuickCategory.values()) { category ->
                 QuickCategoryItem(
                     category = category,
-                    onClick = { onCategoryClick(category) }
+                    onClick = { navController.navigate(category.route) }
                 )
             }
         }

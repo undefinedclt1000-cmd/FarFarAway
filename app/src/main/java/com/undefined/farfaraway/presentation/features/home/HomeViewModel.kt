@@ -3,6 +3,7 @@ package com.undefined.farfaraway.presentation.features.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.undefined.farfaraway.domain.entities.*
+import com.undefined.farfaraway.presentation.shared.navigation.enums.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -347,9 +348,9 @@ enum class QuickCategory(
     val title: String,
     val route: String // Para navegación
 ) {
-    ROOMS("Cuartos", "rooms"),
-    ROUTES("Rutas", "routes"),
-    SHOPPING("Compras", "shopping"),
-    FINANCES("Finanzas", "finances"),
-    PROFILES("Perfiles", "profiles")
+    ROOMS("Cuartos", Routes.RENTS.name),
+    ROUTES("Rutas", Routes.ROUTES.name),
+    SHOPPING("Compras", Routes.BILLS.name), // ejemplo, depende de a dónde quieras que vaya
+    FINANCES("Finanzas", Routes.FINANCE.name),
+    PROFILES("Perfiles", Routes.PROFILE.name)
 }
