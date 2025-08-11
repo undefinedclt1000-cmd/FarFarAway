@@ -3,6 +3,7 @@ package com.undefined.farfaraway.presentation.features.rents
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.undefined.farfaraway.core.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
@@ -10,10 +11,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import com.undefined.farfaraway.domain.entities.*
 import com.undefined.farfaraway.domain.interfaces.IPropertyRepository
+import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
 
 @HiltViewModel
 class RentsViewModel @Inject constructor(
-    private val propertyRepository: IPropertyRepository
+    private val propertyRepository: IPropertyRepository,
+    private val dataStoreUseCases: DataStoreUseCases
 ): ViewModel(){
 
     private val _isLoading = MutableStateFlow(true)
@@ -145,14 +148,14 @@ class RentsViewModel @Inject constructor(
     private fun checkUserType() {
         viewModelScope.launch {
             try {
-                //val userType = propertyRepository.getCurrentUserType()
-                //_currentUserType.value = userType
-                _isOwner.value = true //userType == UserType.LANDLORD  // Cambio: usar LANDLORD
+                val userType = dataStoreUseCases.getDataString(Constants.USER_TYPE)
+                _isOwner.value = userType == UserType.LANDLORD.name
             } catch (e: Exception) {
                 _error.value = "Error al verificar tipo de usuario: ${e.message}"
             }
         }
     }
+
 
     private fun loadCommentsForProperty(propertyId: String) {
         viewModelScope.launch {

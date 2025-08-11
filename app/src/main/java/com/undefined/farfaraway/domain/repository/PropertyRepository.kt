@@ -105,7 +105,7 @@ class PropertyRepository @Inject constructor(
     // Agregar nueva propiedad
     override suspend fun addProperty(property: Property): Result<String> {
         return try {
-            val userId = auth.currentUser?.uid
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
                 ?: return Result.failure(Exception("Usuario no autenticado"))
 
             val propertyId = propertiesRef.push().key
@@ -224,7 +224,7 @@ class PropertyRepository @Inject constructor(
     // Verificar tipo de usuario actual
     override suspend fun getCurrentUserType(): UserType {
         return try {
-            val userId = auth.currentUser?.uid ?: return UserType.STUDENT
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return UserType.STUDENT
             val snapshot = usersRef.child(userId).get().await()
             val user = snapshot.getValue(User::class.java)
 
@@ -251,7 +251,7 @@ class PropertyRepository @Inject constructor(
 
     // Alternar like de propiedad
     override suspend fun togglePropertyLike(propertyId: String): Result<Boolean> {
-        val userId = auth.currentUser?.uid
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: return Result.failure(Exception("Usuario no autenticado"))
 
         return try {
@@ -308,7 +308,7 @@ class PropertyRepository @Inject constructor(
 
     // Obtener likes del usuario actual
     override fun getUserPropertyLikes(): Flow<Set<String>> = callbackFlow {
-        val userId = auth.currentUser?.uid
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
         if (userId == null) {
             trySend(emptySet())
@@ -386,7 +386,7 @@ class PropertyRepository @Inject constructor(
 
     // Agregar comentario
     override suspend fun addComment(propertyId: String, content: String, parentCommentId: String?): Result<String> {
-        val userId = auth.currentUser?.uid
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: return Result.failure(Exception("Usuario no autenticado"))
 
         return try {
