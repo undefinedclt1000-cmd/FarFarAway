@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.undefined.farfaraway.domain.entities.*
+import com.undefined.farfaraway.presentation.features.finance.finance.FinanceViewModel
 import com.undefined.farfaraway.presentation.shared.navigation.enums.Routes
 
 @Composable
@@ -146,7 +147,6 @@ fun HomeContent(
         financialSummary?.let { summary ->
             item {
                 FinancialSummaryCard(
-                    financialSummary = summary,
                     onViewDetailsClick = { navController.navigate(Routes.FINANCE.name) }
                 )
             }
@@ -688,9 +688,12 @@ fun RouteCard(
 
 @Composable
 fun FinancialSummaryCard(
-    financialSummary: FinancialSummary,
+    viewModel: FinanceViewModel = hiltViewModel(),
     onViewDetailsClick: () -> Unit
 ) {
+    val financialSummary by viewModel.financialSummary.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -701,101 +704,129 @@ fun FinancialSummaryCard(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        if (isLoading) {
+            // Loader mientras trae datos
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Resumen financiero",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                CircularProgressIndicator()
+            }
+        } else {
+            financialSummary?.let { summary ->
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Resumen financiero",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
 
-                IconButton(onClick = onViewDetailsClick) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Ver detalles",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        IconButton(onClick = onViewDetailsClick) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = "Ver detalles",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+
+                    // Status badge
+                    val statusColor = when (summary.budgetStatus) {
+                        BudgetStatus.ON_TRACK.name -> Color(0xFF4CAF50)
+                        BudgetStatus.WARNING.name -> Color(0xFFFF9800)
+                        BudgetStatus.OVER_BUDGET.name -> Color(0xFFFF5722)
+                        BudgetStatus.EXCELLENT.name -> Color(0xFF2196F3)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+
+                    val statusText = when (summary.budgetStatus) {
+                        BudgetStatus.ON_TRACK.name -> "En buen camino"
+                        BudgetStatus.WARNING.name -> "Precaución"
+                        BudgetStatus.OVER_BUDGET.name -> "Sobre presupuesto"
+                        BudgetStatus.EXCELLENT.name -> "¡Excelente!"
+                        else -> "Estado normal"
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = statusColor.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = statusColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        FinancialItem(
+                            icon = Icons.Default.TrendingUp,
+                            label = "Ingresos",
+                            value = "${summary.totalIncome.toInt()}",
+                            color = Color(0xFF4CAF50)
+                        )
+
+                        FinancialItem(
+                            icon = Icons.Default.TrendingDown,
+                            label = "Gastos",
+                            value = "${summary.totalExpenses.toInt()}",
+                            color = Color(0xFFFF5722)
+                        )
+
+                        FinancialItem(
+                            icon = Icons.Default.AccountBalance,
+                            label = "Disponible",
+                            value = "${summary.remainingBudget.toInt()}",
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Recomendaciones
+                    if (summary.recommendations.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = summary.recommendations.first(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            } ?: run {
+                // Si no hay datos
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No hay datos financieros disponibles",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
-            }
-
-            // Status badge
-            val statusColor = when (financialSummary.budgetStatus) {
-                BudgetStatus.ON_TRACK.name -> Color(0xFF4CAF50)
-                BudgetStatus.WARNING.name -> Color(0xFFFF9800)
-                BudgetStatus.OVER_BUDGET.name -> Color(0xFFFF5722)
-                BudgetStatus.EXCELLENT.name -> Color(0xFF2196F3)
-                else -> MaterialTheme.colorScheme.primary
-            }
-
-            val statusText = when (financialSummary.budgetStatus) {
-                BudgetStatus.ON_TRACK.name -> "En buen camino"
-                BudgetStatus.WARNING.name -> "Precaución"
-                BudgetStatus.OVER_BUDGET.name -> "Sobre presupuesto"
-                BudgetStatus.EXCELLENT.name -> "¡Excelente!"
-                else -> "Estado normal"
-            }
-
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = statusColor.copy(alpha = 0.2f)
-            ) {
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = statusColor,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                FinancialItem(
-                    icon = Icons.Default.TrendingUp,
-                    label = "Ingresos",
-                    value = "${financialSummary.totalIncome.toInt()}",
-                    color = Color(0xFF4CAF50)
-                )
-
-                FinancialItem(
-                    icon = Icons.Default.TrendingDown,
-                    label = "Gastos",
-                    value = "${financialSummary.totalExpenses.toInt()}",
-                    color = Color(0xFFFF5722)
-                )
-
-                FinancialItem(
-                    icon = Icons.Default.AccountBalance,
-                    label = "Disponible",
-                    value = "${financialSummary.remainingBudget.toInt()}",
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // Recomendaciones
-            if (financialSummary.recommendations.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = financialSummary.recommendations.first(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
     }
 }
+
 
 @Composable
 fun FinancialItem(
