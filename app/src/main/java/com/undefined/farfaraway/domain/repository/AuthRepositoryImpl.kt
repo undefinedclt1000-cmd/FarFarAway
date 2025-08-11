@@ -13,7 +13,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : IAuthRepository {
 
-    override suspend fun registerUser(user: User, password: String): Response<Boolean> {
+    override suspend fun registerUser(user: User, password: String): Response<User> {
         return try {
             // CRUCIAL: Usar createUserWithEmailAndPassword para registro
             val result = firebaseAuth.createUserWithEmailAndPassword(user.email, password).await()
@@ -47,7 +47,7 @@ class AuthRepositoryImpl @Inject constructor(
                     println("Warning: No se pudo enviar email de verificación: ${e.message}")
                 }
 
-                Response.Success(true)
+                getUser(userId = firebaseUser.uid)
             } ?: Response.Error(message = "Error al crear usuario en Firebase Auth")
 
         } catch (e: Exception) {
@@ -55,13 +55,13 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun loginUser(email: String, password: String): Response<Boolean> {
+    override suspend fun loginUser(email: String, password: String): Response<User> {
         return try {
             // Para login SÍ usamos signInWithEmailAndPassword
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
 
             result.user?.let {
-                Response.Success(true)
+                getUser(userId = it.uid)
             } ?: Response.Error(message = "Error al iniciar sesión")
 
         } catch (e: Exception) {
@@ -74,7 +74,7 @@ class AuthRepositoryImpl @Inject constructor(
             val document = firestore.collection("users").document(userId).get().await()
 
             if (document.exists()) {
-                val user = document.toObject(User::class.java)
+                val user = document.toObject(User::class.java)?.copy(id = document.id)
                 user?.let {
                     Response.Success(it)
                 } ?: Response.Error(message = "Error al convertir documento a User")
@@ -86,6 +86,7 @@ class AuthRepositoryImpl @Inject constructor(
             Response.Error(exception = e, message = "Error al obtener usuario: ${e.message}")
         }
     }
+
 
     override suspend fun logout(): Response<Boolean> {
         return try {

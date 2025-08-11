@@ -354,7 +354,7 @@ fun RouteMapView(
         position = CameraPosition.fromLatLngZoom(
             selectedRoute?.origin?.let {
                 LatLng(it.latitude, it.longitude)
-            } ?: LatLng(20.0833, -98.7667), // Tula de Allende por defecto
+            } ?: LatLng(20.008986, -99.342964),
             12f
         )
     }

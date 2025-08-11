@@ -9,4 +9,5 @@ data class DataStoreUseCases(
     val getDataInt: GetDataInt,
     val setDouble: SetDouble,
     val getDouble: GetDouble,
+
 )

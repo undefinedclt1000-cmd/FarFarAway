@@ -60,6 +60,23 @@ class ProfileViewModel @Inject constructor(
                 val isActive = dataStoreUseCases.getDataBoolean(Constants.USER_IS_ACTIVE)
 
                 if (id.isNotEmpty()) {
+                    println(
+                        "User data loaded: " +
+                                "id: $id, " +
+                                "firstName: $firstName, " +
+                                "lastName: $lastName, " +
+                                "email: $email, " +
+                                "age: $age, " +
+                                "profileImageUrl: $profileImageUrl, " +
+                                "phoneNumber: $phoneNumber, " +
+                                "isEmailVerified: $isEmailVerified, " +
+                                "userType: $userType, " +
+                                "universityId: $universityId" +
+                                "averageRating: $averageRating, " +
+                                "totalReviews: $totalReviews, " +
+                                "isActive: $isActive"
+
+                    )
                     val user = User(
                         id = id,
                         firstName = firstName,
@@ -99,12 +116,32 @@ class ProfileViewModel @Inject constructor(
                 //fireAuthUseCases.signOut()
 
                 // Limpiar datos del DataStore
-                //dataStoreUseCases.clearUserData()
+                clearUserData()
 
                 _logoutState.value = Response.Success(true)
             } catch (e: Exception) {
                 _logoutState.value = Response.Error(e)
             }
+        }
+    }
+
+
+    private fun clearUserData() {
+        viewModelScope.launch {
+            dataStoreUseCases.setDataString(Constants.USER_UID, "")
+            dataStoreUseCases.setDataString(Constants.USER_FIRST_NAME, "")
+            dataStoreUseCases.setDataString(Constants.USER_LAST_NAME, "")
+            dataStoreUseCases.setDataString(Constants.USER_EMAIL, "")
+            dataStoreUseCases.setDataInt(Constants.USER_AGE, 0)
+            dataStoreUseCases.setDataString(Constants.USER_PROFILE_IMAGE_URL, "")
+            dataStoreUseCases.setDataString(Constants.USER_PHONE_NUMBER, "")
+            dataStoreUseCases.setDataBoolean(Constants.USER_IS_EMAIL_VERIFIED, false)
+            dataStoreUseCases.setDataString(Constants.USER_TYPE, "")
+            dataStoreUseCases.setDataString(Constants.USER_UNIVERSITY_ID, "")
+            dataStoreUseCases.setDouble(Constants.USER_AVERAGE_RATING, 0.0)
+            dataStoreUseCases.setDataInt(Constants.USER_TOTAL_REVIEWS, 0)
+            dataStoreUseCases.setDataBoolean(Constants.USER_IS_ACTIVE, false)
+
         }
     }
 

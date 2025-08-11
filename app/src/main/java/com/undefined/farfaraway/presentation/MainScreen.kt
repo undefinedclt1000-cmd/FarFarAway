@@ -37,7 +37,7 @@ fun MainScreen(
     val navigateToLogin by loginViewModel.navigateToLogin.collectAsState()
 
     LaunchedEffect(navigateToLogin) {
-        if (!navigateToLogin) {
+        if (navigateToLogin) {
             navController.navigate(Routes.LOGIN.name) {
                 popUpTo(Routes.LOGIN.name) { inclusive = true }
             }

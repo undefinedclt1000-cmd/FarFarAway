@@ -11,7 +11,7 @@
     <string name="chats_card_Search">Buscar</string>
 
     <!-- StringResources for Auth -->
-    <string name="welcome_title">Bienvenido a U-Life</string>
+    <string name="welcome_title">Bienvenido a FarFarAway </string>
     <string name="welcome_body">Iniciar sesión</string>
     <string name="auth_login_title">Iniciar sesión</string>
     <string name="auth_login_email">Correo electrónico</string>

@@ -4,7 +4,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.undefined.farfaraway.core.Constants
 import com.undefined.farfaraway.domain.entities.Response
+import com.undefined.farfaraway.domain.entities.User
+import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
 import com.undefined.farfaraway.presentation.shared.validation.Validations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +20,8 @@ import javax.inject.Inject
 class LoginViewModel @Inject constructor(
     private val _fireAuthUseCases: FireAuthUseCases,
     private val _validations: Validations,
+    private val dataStoreUseCases: DataStoreUseCases
+
 ): ViewModel() {
 
     // Flow para el estado de carga
@@ -92,13 +97,37 @@ class LoginViewModel @Inject constructor(
         _isLoading.value = Response.Loading
 
         try {
-            // Asumiendo que tienes un método de login en FireAuthUseCases
             val loginResult = _fireAuthUseCases.loginUser(_email.value!!, _password.value!!)
-            _isLoading.value = loginResult
+
+            if (loginResult is Response.Success) {
+                val user = loginResult.data
+                // Guardar datos en DataStore
+                saveUserToDataStore(user)
+            }
+
+            _isLoading.value = Response.Success(true)
         } catch (e: Exception) {
             _isLoading.value = Response.Error(e)
         }
     }
+
+    private fun saveUserToDataStore(user: User) = viewModelScope.launch {
+        dataStoreUseCases.setDataString(Constants.USER_UID, user.id)
+        dataStoreUseCases.setDataString(Constants.USER_FIRST_NAME, user.firstName)
+        dataStoreUseCases.setDataString(Constants.USER_LAST_NAME, user.lastName)
+        dataStoreUseCases.setDataString(Constants.USER_EMAIL, user.email)
+        dataStoreUseCases.setDataInt(Constants.USER_AGE, user.age)
+        dataStoreUseCases.setDataString(Constants.USER_PROFILE_IMAGE_URL, user.profileImageUrl)
+        dataStoreUseCases.setDataString(Constants.USER_PHONE_NUMBER, user.phoneNumber)
+        dataStoreUseCases.setDataBoolean(Constants.USER_IS_EMAIL_VERIFIED, user.isEmailVerified)
+        dataStoreUseCases.setDataString(Constants.USER_TYPE, user.userType)
+        dataStoreUseCases.setDataString(Constants.USER_UNIVERSITY_ID, user.universityId)
+        dataStoreUseCases.setDouble(Constants.USER_AVERAGE_RATING, user.averageRating)
+        dataStoreUseCases.setDataInt(Constants.USER_TOTAL_REVIEWS, user.totalReviews)
+        dataStoreUseCases.setDataBoolean(Constants.USER_IS_ACTIVE, user.isActive)
+    }
+
+
 
     fun resetPassword(email: String) {
         viewModelScope.launch {
@@ -111,9 +140,3 @@ class LoginViewModel @Inject constructor(
         }
     }
 }
-
-// Validaciones básicas si no las tienes en tu clase Validations
-data class ValidationResult(
-    val successful: Boolean,
-    val errorMessage: String? = null
-)

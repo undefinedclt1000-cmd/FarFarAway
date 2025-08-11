@@ -4,9 +4,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.undefined.farfaraway.core.Constants
 import com.undefined.farfaraway.domain.entities.Response
 import com.undefined.farfaraway.domain.entities.User
 import com.undefined.farfaraway.domain.entities.UserType
+import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
 import com.undefined.farfaraway.presentation.shared.validation.Validations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -19,10 +21,11 @@ import javax.inject.Inject
 class SignUpViewModel @Inject constructor(
     private val _fireAuthUseCases: FireAuthUseCases,
     private val _validations: Validations,
+    private val dataStoreUseCases: DataStoreUseCases
 ): ViewModel() {
     // Flow
-    private val _isLoading = MutableStateFlow<Response<Boolean>?>(value = null)
-    val isLoading: MutableStateFlow<Response<Boolean>?> = _isLoading
+    private val _isLoading = MutableStateFlow<Response<User>?>(value = null)
+    val isLoading: MutableStateFlow<Response<User>?> = _isLoading
 
     // Variables para el formulario
     private val _email = MutableLiveData("")
@@ -164,8 +167,32 @@ class SignUpViewModel @Inject constructor(
         )
 
         val registerResponse = _fireAuthUseCases.registerUser(user, _password.value!!)
+
+        if (registerResponse is Response.Success) {
+            saveUserToDataStore(registerResponse.data) // 👈 Guarda el User en DataStore
+        }
+
         _isLoading.value = registerResponse
     }.await()
+
+
+    private fun saveUserToDataStore(user: User) = viewModelScope.launch {
+        dataStoreUseCases.setDataString(Constants.USER_UID, user.id)
+        dataStoreUseCases.setDataString(Constants.USER_FIRST_NAME, user.firstName)
+        dataStoreUseCases.setDataString(Constants.USER_LAST_NAME, user.lastName)
+        dataStoreUseCases.setDataString(Constants.USER_EMAIL, user.email)
+        dataStoreUseCases.setDataInt(Constants.USER_AGE, user.age)
+        dataStoreUseCases.setDataString(Constants.USER_PROFILE_IMAGE_URL, user.profileImageUrl)
+        dataStoreUseCases.setDataString(Constants.USER_PHONE_NUMBER, user.phoneNumber)
+        dataStoreUseCases.setDataBoolean(Constants.USER_IS_EMAIL_VERIFIED, user.isEmailVerified)
+        dataStoreUseCases.setDataString(Constants.USER_TYPE, user.userType)
+        dataStoreUseCases.setDataString(Constants.USER_UNIVERSITY_ID, user.universityId)
+        dataStoreUseCases.setDouble(Constants.USER_AVERAGE_RATING, user.averageRating)
+        dataStoreUseCases.setDataInt(Constants.USER_TOTAL_REVIEWS, user.totalReviews)
+        dataStoreUseCases.setDataBoolean(Constants.USER_IS_ACTIVE, user.isActive)
+    }
+
+
 
     private fun validateAge(age: String): ValidationResult {
         if (age.isBlank()) {

@@ -8,5 +8,5 @@ import javax.inject.Inject
 class RegisterUser @Inject constructor(
     private val fireAuthRepository: IAuthRepository
 ) {
-    suspend operator fun invoke(user: User, password: String): Response<Boolean> = fireAuthRepository.registerUser(user, password)
+    suspend operator fun invoke(user: User, password: String): Response<User> = fireAuthRepository.registerUser(user, password)
 }
