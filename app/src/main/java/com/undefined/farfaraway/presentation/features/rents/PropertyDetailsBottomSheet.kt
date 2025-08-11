@@ -33,6 +33,25 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
+fun DebugPropertyInfo(property: Property) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .background(Color.Yellow.copy(alpha = 0.3f))
+    ) {
+        Text("🐛 DEBUG INFO:", fontWeight = FontWeight.Bold)
+        Text("Title: '${property.title}'")
+        Text("Monthly Rent: ${property.monthlyRent}")
+        Text("Contact Info: phone='${property.contactInfo.phoneNumber}', whatsapp='${property.contactInfo.whatsappNumber}', email='${property.contactInfo.email}'")
+        Text("Description: '${property.description}'")
+        Text("Utilities: electricity=${property.utilities.electricityIncluded}, water=${property.utilities.waterIncluded}")
+        Text("Images count: ${property.images.size}")
+        Text("Amenities count: ${property.amenities.size}")
+    }
+}
+
+@Composable
 fun EnhancedPropertyCard(
     property: Property,
     isLiked: Boolean,

@@ -3,41 +3,152 @@ package com.undefined.farfaraway.domain.entities
 
 import com.google.firebase.database.PropertyName
 
+
 data class Property(
-    @get:PropertyName("id") val id: String = "",
-    @get:PropertyName("title") val title: String = "",
-    @get:PropertyName("description") val description: String = "",
-    @get:PropertyName("address") val address: String = "",
-    @get:PropertyName("monthly_rent") val monthlyRent: Double = 0.0,
-    @get:PropertyName("deposit") val deposit: Double = 0.0,
-    @get:PropertyName("property_type") val propertyType: String = PropertyType.PRIVATE_ROOM.name,
-    @get:PropertyName("room_type") val roomType: String = RoomType.PRIVATE.name,
-    @get:PropertyName("max_occupants") val maxOccupants: Int = 1,
-    @get:PropertyName("current_occupants") val currentOccupants: Int = 0,
-    @get:PropertyName("amenities") val amenities: List<String> = emptyList(),
-    @get:PropertyName("images") val images: List<String> = emptyList(),
-    @get:PropertyName("rules") val rules: List<String> = emptyList(),
-    @get:PropertyName("is_available") val isAvailable: Boolean = true,
-    @get:PropertyName("is_active") val isActive: Boolean = true,
-    @get:PropertyName("distance_to_university") val distanceToUniversity: Double = 0.0,
-    @get:PropertyName("utilities") val utilities: UtilitiesInfo = UtilitiesInfo(),
-    @get:PropertyName("contact_info") val contactInfo: ContactInfo = ContactInfo(),
-    @get:PropertyName("owner_id") val ownerId: String = "",
-    @get:PropertyName("created_at") val createdAt: Long = System.currentTimeMillis(),
-    @get:PropertyName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
-    @get:PropertyName("view_count") val viewCount: Int = 0,
-    @get:PropertyName("like_count") val likeCount: Int = 0,
-    @get:PropertyName("comments_count") val commentsCount: Int = 0,
-    @get:PropertyName("latitude") val latitude: Double? = null,
-    @get:PropertyName("longitude") val longitude: Double? = null,
-    @get:PropertyName("average_rating") val averageRating: Double = 0.0,
-    @get:PropertyName("total_reviews") val totalReviews: Int = 0,
-    @get:PropertyName("likes_count") val likesCount: Int = 0
+    @get:PropertyName("id")
+    @set:PropertyName("id")
+    var id: String = "",
+
+    @get:PropertyName("title")
+    @set:PropertyName("title")
+    var title: String = "",
+
+    @get:PropertyName("description")
+    @set:PropertyName("description")
+    var description: String = "",
+
+    @get:PropertyName("address")
+    @set:PropertyName("address")
+    var address: String = "",
+
+    @get:PropertyName("monthly_rent")
+    @set:PropertyName("monthly_rent")
+    var monthlyRent: Double = 0.0,
+
+    @get:PropertyName("deposit")
+    @set:PropertyName("deposit")
+    var deposit: Double = 0.0,
+
+    @get:PropertyName("property_type")
+    @set:PropertyName("property_type")
+    var propertyType: String = PropertyType.PRIVATE_ROOM.name,
+
+    @get:PropertyName("room_type")
+    @set:PropertyName("room_type")
+    var roomType: String = RoomType.PRIVATE.name,
+
+    @get:PropertyName("max_occupants")
+    @set:PropertyName("max_occupants")
+    var maxOccupants: Int = 1,
+
+    @get:PropertyName("current_occupants")
+    @set:PropertyName("current_occupants")
+    var currentOccupants: Int = 0,
+
+    @get:PropertyName("amenities")
+    @set:PropertyName("amenities")
+    var amenities: List<String> = emptyList(),
+
+    @get:PropertyName("images")
+    @set:PropertyName("images")
+    var images: List<String> = emptyList(),
+
+    @get:PropertyName("rules")
+    @set:PropertyName("rules")
+    var rules: List<String> = emptyList(),
+
+    @get:PropertyName("is_available")
+    @set:PropertyName("is_available")
+    var isAvailable: Boolean = true,
+
+    @get:PropertyName("is_active")
+    @set:PropertyName("is_active")
+    var isActive: Boolean = true,
+
+    @get:PropertyName("distance_to_university")
+    @set:PropertyName("distance_to_university")
+    var distanceToUniversity: Double = 0.0,
+
+    @get:PropertyName("utilities")
+    @set:PropertyName("utilities")
+    var utilities: UtilitiesInfo = UtilitiesInfo(),
+
+    @get:PropertyName("contact_info")
+    @set:PropertyName("contact_info")
+    var contactInfo: ContactInfo = ContactInfo(),
+
+    @get:PropertyName("owner_id")
+    @set:PropertyName("owner_id")
+    var ownerId: String = "",
+
+    @get:PropertyName("created_at")
+    @set:PropertyName("created_at")
+    var createdAt: Long = System.currentTimeMillis(),
+
+    @get:PropertyName("updated_at")
+    @set:PropertyName("updated_at")
+    var updatedAt: Long = System.currentTimeMillis(),
+
+    @get:PropertyName("view_count")
+    @set:PropertyName("view_count")
+    var viewCount: Int = 0,
+
+    @get:PropertyName("likes_count")
+    @set:PropertyName("likes_count")
+    var likesCount: Int = 0,
+
+    @get:PropertyName("comments_count")
+    @set:PropertyName("comments_count")
+    var commentsCount: Int = 0,
+
+    @get:PropertyName("latitude")
+    @set:PropertyName("latitude")
+    var latitude: Double? = null,
+
+    @get:PropertyName("longitude")
+    @set:PropertyName("longitude")
+    var longitude: Double? = null,
+
+    @get:PropertyName("average_rating")
+    @set:PropertyName("average_rating")
+    var averageRating: Double = 0.0,
+
+    @get:PropertyName("total_reviews")
+    @set:PropertyName("total_reviews")
+    var totalReviews: Int = 0
 ) {
-    constructor() : this("", "", "", "", 0.0, 0.0, PropertyType.PRIVATE_ROOM.name, RoomType.PRIVATE.name,
-        1, 0, emptyList(), emptyList(), emptyList(), true, true, 0.0, UtilitiesInfo(), ContactInfo(),
-        "", System.currentTimeMillis(), System.currentTimeMillis(), 0, 0, 0, null, null, 0.0, 0, 0)
+    constructor() : this(
+        id = "",
+        title = "",
+        description = "",
+        address = "",
+        monthlyRent = 0.0,
+        deposit = 0.0,
+        propertyType = PropertyType.PRIVATE_ROOM.name,
+        roomType = RoomType.PRIVATE.name,
+        maxOccupants = 1,
+        currentOccupants = 0,
+        amenities = emptyList(),
+        images = emptyList(),
+        rules = emptyList(),
+        isAvailable = true,
+        isActive = true,
+        distanceToUniversity = 0.0,
+        utilities = UtilitiesInfo(),
+        contactInfo = ContactInfo(),
+        ownerId = "",
+        createdAt = System.currentTimeMillis(),
+        updatedAt = System.currentTimeMillis(),
+        viewCount = 0,
+        likesCount = 0,
+        commentsCount = 0,
+        latitude = null,
+        longitude = null,
+        averageRating = 0.0,
+        totalReviews = 0
+    )
 }
+
 
 // PropertyType.kt
 enum class PropertyType(val displayName: String) {
