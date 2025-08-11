@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.undefined.farfaraway.core.Constants
 import com.undefined.farfaraway.domain.entities.*
+import com.undefined.farfaraway.domain.repository.PropertyRepository
 import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
 import com.undefined.farfaraway.presentation.shared.navigation.enums.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,9 +14,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val dataStoreUseCases: DataStoreUseCases
+    private val dataStoreUseCases: DataStoreUseCases,
     // Aquí irían tus repositorios cuando los implementes
-    // private val propertyRepository: PropertyRepository,
+    private val propertyRepository: PropertyRepository,
     // private val routeRepository: RouteRepository,
     // private val notificationRepository: NotificationRepository,
     // private val financialRepository: FinancialRepository,
@@ -77,74 +78,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadFeaturedProperties() {
+   private suspend fun loadFeaturedProperties() {
         // Simulación de datos - reemplazar con llamada real
-        val properties = listOf(
-            Property(
-                id = "1",
-                title = "Cuarto privado cerca de UTTT",
-                description = "Cuarto amplio con baño privado, muy cerca de la universidad",
-                address = "Calle Universidad #123",
-                latitude = 20.1234,
-                longitude = -98.1234,
-                monthlyRent = 2500.0,
-                deposit = 2500.0,
-                propertyType = PropertyType.PRIVATE_ROOM.name,
-                roomType = RoomType.PRIVATE.name,
-                maxOccupants = 1,
-                currentOccupants = 0,
-                amenities = listOf("WIFI", "PARKING", "LAUNDRY"),
-                isAvailable = true,
-                distanceToUniversity = 0.5,
-                averageRating = 4.5,
-                totalReviews = 12,
-                likesCount = 25,
-                commentsCount = 8
-            ),
-            Property(
-                id = "2",
-                title = "Departamento compartido",
-                description = "Departamento de 3 recámaras para compartir con estudiantes",
-                address = "Av. Revolución #456",
-                latitude = 20.1345,
-                longitude = -98.1345,
-                monthlyRent = 1800.0,
-                deposit = 1800.0,
-                propertyType = PropertyType.SHARED_ROOM.name,
-                roomType = RoomType.SHARED.name,
-                maxOccupants = 3,
-                currentOccupants = 2,
-                amenities = listOf("WIFI", "KITCHEN", "LAUNDRY"),
-                isAvailable = true,
-                distanceToUniversity = 1.2,
-                averageRating = 4.2,
-                totalReviews = 18,
-                likesCount = 15,
-                commentsCount = 12
-            ),
-            Property(
-                id = "3",
-                title = "Casa completa",
-                description = "Casa completa ideal para grupo de amigos",
-                address = "Col. Centro #789",
-                latitude = 20.1456,
-                longitude = -98.1456,
-                monthlyRent = 4000.0,
-                deposit = 4000.0,
-                propertyType = PropertyType.HOUSE.name,
-                roomType = RoomType.PRIVATE.name,
-                maxOccupants = 4,
-                currentOccupants = 0,
-                amenities = listOf("WIFI", "PARKING", "GARDEN", "FURNISHED"),
-                isAvailable = true,
-                distanceToUniversity = 0.8,
-                averageRating = 4.8,
-                totalReviews = 6,
-                likesCount = 32,
-                commentsCount = 5
-            )
-        )
-        _featuredProperties.value = properties
+       try {
+           propertyRepository.getAvailableProperties()
+               .take(1) // Solo tomamos la primera emisión para evitar actualizaciones continuas
+               .collect { allProperties ->
+                   val filteredProperties = allProperties
+                       .filter { it.monthlyRent <= 3000.0 }  // Filtrar por precio <= 3000
+                       .take(3)  // Tomar solo las primeras 3
+
+                   _featuredProperties.value = filteredProperties
+               }
+       } catch (e: Exception) {
+           // En caso de error, dejar la lista vacía
+           _featuredProperties.value = emptyList()
+       }
     }
 
     private suspend fun loadPopularRoutes() {
