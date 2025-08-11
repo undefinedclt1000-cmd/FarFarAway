@@ -2,9 +2,11 @@ package com.undefined.farfaraway.presentation.features.finance.bills
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.undefined.farfaraway.core.Constants
 import com.undefined.farfaraway.domain.entities.*
 import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
+import com.undefined.farfaraway.domain.useCases.firebase.FinanceFirestoreUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,9 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BillsViewModel @Inject constructor(
-    private val dataStoreUseCases: DataStoreUseCases
-    // Aquí agregarás los use cases de finanzas cuando los implementes
-    // private val financeUseCases: FinanceUseCases
+    private val dataStoreUseCases: DataStoreUseCases,
+    private val firestoreUseCases: FinanceFirestoreUseCases
 ): ViewModel() {
 
     // Estado del perfil financiero del usuario
@@ -51,24 +52,64 @@ class BillsViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Por ahora cargamos datos de ejemplo
-                loadSampleRubricData()
-
-                // Código real para cuando implementes los use cases:
-                /*
-                val userId = dataStoreUseCases.getDataString(Constants.USER_UID)
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
                 if (userId.isNotEmpty()) {
-                    launch { loadFinancialProfile(userId) }
-                    launch { loadFinancialSummary(userId) }
-                    launch { loadExpensesByCategory(userId) }
+                    launch {
+                        firestoreUseCases.getFinancialProfile(userId).collect { profile ->
+                            _financialProfile.value = profile
+                            recalculateSummary()
+                        }
+                    }
+                    launch {
+                        firestoreUseCases.getExpenses(userId).collect { expensesList ->
+                            // Agrupar gastos por categoría y filtrar ceros
+                            val expensesByCat = expensesList.groupBy { it.category }
+                                .mapValues { it.value.sumOf { expense -> expense.amount } }
+                                .filter { it.value > 0 }
+                            _expensesByCategory.value = expensesByCat
+                            _totalItems.value = expensesList.size
+                            recalculateSummary()
+                        }
+                    }
+                } else {
+                    _errorMessage.value = "Usuario no autenticado"
                 }
-                */
             } catch (e: Exception) {
-                _errorMessage.value = "Error al cargar la rúbrica financiera: ${e.message}"
+                _errorMessage.value = "Error al cargar datos: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    private fun recalculateSummary() {
+        val profile = _financialProfile.value ?: return
+        val expensesByCat = _expensesByCategory.value
+
+        val totalIncome = profile.monthlyIncome
+        val totalExpenses = expensesByCat.values.sum()
+        val remainingBudget = totalIncome - totalExpenses
+
+        val budgetStatus = when {
+            remainingBudget > totalIncome * 0.2 -> BudgetStatus.EXCELLENT
+            remainingBudget > 0 -> BudgetStatus.ON_TRACK
+            remainingBudget > -totalIncome * 0.1 -> BudgetStatus.WARNING
+            else -> BudgetStatus.OVER_BUDGET
+        }
+
+        _financialSummary.value = FinancialSummary(
+            id = "fs_${profile.userId}",
+            userId = profile.userId,
+            period = BudgetPeriod.MONTHLY.name,
+            totalIncome = totalIncome,
+            totalExpenses = totalExpenses,
+            remainingBudget = remainingBudget,
+            expensesByCategory = expensesByCat,
+            budgetStatus = budgetStatus.name,
+            recommendations = generateRecommendations(totalIncome, expensesByCat, budgetStatus),
+            periodStart = Date(),
+            periodEnd = Date()
+        )
     }
 
     private fun loadSampleRubricData() {
