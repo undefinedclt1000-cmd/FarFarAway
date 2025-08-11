@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.undefined.farfaraway.domain.useCases.firebase.FireAuthUseCases
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,6 +28,9 @@ class LoginViewModel @Inject constructor(
     // Flow para el estado de carga
     private val _isLoading = MutableStateFlow<Response<Boolean>?>(value = null)
     val isLoading: MutableStateFlow<Response<Boolean>?> = _isLoading
+
+    private val _userDataSaved = MutableStateFlow(false)
+    val userDataSaved: StateFlow<Boolean> = _userDataSaved.asStateFlow()
 
     // Variables del formulario
     private val _email = MutableLiveData("")
@@ -52,6 +56,8 @@ class LoginViewModel @Inject constructor(
 
     fun resetInitState(){
         _isLoading.value = null
+        _userDataSaved.value = false // Resetear también este estado
+
     }
 
     fun onEvent(event: LoginFormEvent){
@@ -101,30 +107,49 @@ class LoginViewModel @Inject constructor(
 
             if (loginResult is Response.Success) {
                 val user = loginResult.data
-                // Guardar datos en DataStore
+                println("User login successful: $user")
+
+                // Guardar datos del usuario y esperar a que termine
                 saveUserToDataStore(user)
+
+                _isLoading.value = Response.Success(true)
+            } else {
+                _isLoading.value = Response.Error(Exception("Login failed"))
             }
 
-            _isLoading.value = Response.Success(true)
         } catch (e: Exception) {
             _isLoading.value = Response.Error(e)
         }
     }
 
-    private fun saveUserToDataStore(user: User) = viewModelScope.launch {
-        dataStoreUseCases.setDataString(Constants.USER_UID, user.id)
-        dataStoreUseCases.setDataString(Constants.USER_FIRST_NAME, user.firstName)
-        dataStoreUseCases.setDataString(Constants.USER_LAST_NAME, user.lastName)
-        dataStoreUseCases.setDataString(Constants.USER_EMAIL, user.email)
-        dataStoreUseCases.setDataInt(Constants.USER_AGE, user.age)
-        dataStoreUseCases.setDataString(Constants.USER_PROFILE_IMAGE_URL, user.profileImageUrl)
-        dataStoreUseCases.setDataString(Constants.USER_PHONE_NUMBER, user.phoneNumber)
-        dataStoreUseCases.setDataBoolean(Constants.USER_IS_EMAIL_VERIFIED, user.isEmailVerified)
-        dataStoreUseCases.setDataString(Constants.USER_TYPE, user.userType)
-        dataStoreUseCases.setDataString(Constants.USER_UNIVERSITY_ID, user.universityId)
-        dataStoreUseCases.setDouble(Constants.USER_AVERAGE_RATING, user.averageRating)
-        dataStoreUseCases.setDataInt(Constants.USER_TOTAL_REVIEWS, user.totalReviews)
-        dataStoreUseCases.setDataBoolean(Constants.USER_IS_ACTIVE, user.isActive)
+    private suspend fun saveUserToDataStore(user: User) {
+        try {
+            println("Saving user data to DataStore...")
+
+            // Guardar todos los datos
+            dataStoreUseCases.setDataString(Constants.USER_UID, user.id)
+            dataStoreUseCases.setDataString(Constants.USER_FIRST_NAME, user.firstName)
+            dataStoreUseCases.setDataString(Constants.USER_LAST_NAME, user.lastName)
+            dataStoreUseCases.setDataString(Constants.USER_EMAIL, user.email)
+            dataStoreUseCases.setDataInt(Constants.USER_AGE, user.age)
+            dataStoreUseCases.setDataString(Constants.USER_PROFILE_IMAGE_URL, user.profileImageUrl)
+            dataStoreUseCases.setDataString(Constants.USER_PHONE_NUMBER, user.phoneNumber)
+            dataStoreUseCases.setDataBoolean(Constants.USER_IS_EMAIL_VERIFIED, user.isEmailVerified)
+            dataStoreUseCases.setDataString(Constants.USER_TYPE, user.userType)
+            dataStoreUseCases.setDataString(Constants.USER_UNIVERSITY_ID, user.universityId)
+            dataStoreUseCases.setDouble(Constants.USER_AVERAGE_RATING, user.averageRating)
+            dataStoreUseCases.setDataInt(Constants.USER_TOTAL_REVIEWS, user.totalReviews)
+            dataStoreUseCases.setDataBoolean(Constants.USER_IS_ACTIVE, user.isActive)
+
+            println("User data saved successfully to DataStore")
+
+            // Indicar que los datos se han guardado
+            _userDataSaved.value = true
+
+        } catch (e: Exception) {
+            println("Error saving user data to DataStore: ${e.message}")
+            throw e
+        }
     }
 
 

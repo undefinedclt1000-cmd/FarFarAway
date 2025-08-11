@@ -2,7 +2,9 @@ package com.undefined.farfaraway.presentation.features.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.undefined.farfaraway.core.Constants
 import com.undefined.farfaraway.domain.entities.*
+import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
 import com.undefined.farfaraway.presentation.shared.navigation.enums.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -11,11 +13,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val dataStoreUseCases: DataStoreUseCases
     // Aquí irían tus repositorios cuando los implementes
     // private val propertyRepository: PropertyRepository,
     // private val routeRepository: RouteRepository,
     // private val notificationRepository: NotificationRepository,
-    // private val financialRepository: FinancialRepository
+    // private val financialRepository: FinancialRepository,
 ): ViewModel(){
 
     // Estados para UI
@@ -46,21 +49,17 @@ class HomeViewModel @Inject constructor(
     private val _totalItems = MutableStateFlow(0)
     val totalItems: StateFlow<Int> = _totalItems
 
-    init {
-        loadHomeData()
-    }
 
-    private fun loadHomeData() {
+     fun loadHomeData() {
         viewModelScope.launch {
             _isLoading.value = true
 
             try {
-                // Simular carga de datos - reemplazar con llamadas reales a repositorios
+                loadUserData()
                 loadFeaturedProperties()
                 loadPopularRoutes()
                 loadRecentNotifications()
                 loadFinancialSummary()
-                loadUserProfile()
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -251,23 +250,76 @@ class HomeViewModel @Inject constructor(
         _financialSummary.value = summary
     }
 
-    private suspend fun loadUserProfile() {
-        val user = User(
-            id = "user123",
-            firstName = "Juan",
-            lastName = "Pérez",
-            email = "juan.perez@uttt.edu.mx",
-            age = 20,
-            profileImageUrl = "",
-            phoneNumber = "7771234567",
-            isEmailVerified = true,
-            userType = UserType.STUDENT.name,
-            universityId = "uttt",
-            averageRating = 4.3,
-            totalReviews = 8,
-            isActive = true
-        )
-        _user.value = user
+
+    private fun loadUserData() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val id = dataStoreUseCases.getDataString(Constants.USER_UID)
+
+                if (id.isEmpty()) {
+                    println("No user data found in DataStore")
+                    _user.value = null
+                    return@launch
+                }
+
+                val firstName = dataStoreUseCases.getDataString(Constants.USER_FIRST_NAME)
+                val lastName = dataStoreUseCases.getDataString(Constants.USER_LAST_NAME)
+                val email = dataStoreUseCases.getDataString(Constants.USER_EMAIL)
+                val age = dataStoreUseCases.getDataInt(Constants.USER_AGE)
+                val profileImageUrl = dataStoreUseCases.getDataString(Constants.USER_PROFILE_IMAGE_URL)
+                val phoneNumber = dataStoreUseCases.getDataString(Constants.USER_PHONE_NUMBER)
+                val isEmailVerified = dataStoreUseCases.getDataBoolean(Constants.USER_IS_EMAIL_VERIFIED)
+                val userType = dataStoreUseCases.getDataString(Constants.USER_TYPE)
+                val universityId = dataStoreUseCases.getDataString(Constants.USER_UNIVERSITY_ID)
+                val averageRating = dataStoreUseCases.getDouble(Constants.USER_AVERAGE_RATING)
+                val totalReviews = dataStoreUseCases.getDataInt(Constants.USER_TOTAL_REVIEWS)
+                val isActive = dataStoreUseCases.getDataBoolean(Constants.USER_IS_ACTIVE)
+
+                if (id.isNotEmpty()) {
+                    println(
+                        "User data loaded: " +
+                                "id: $id, " +
+                                "firstName: $firstName, " +
+                                "lastName: $lastName, " +
+                                "email: $email, " +
+                                "age: $age, " +
+                                "profileImageUrl: $profileImageUrl, " +
+                                "phoneNumber: $phoneNumber, " +
+                                "isEmailVerified: $isEmailVerified, " +
+                                "userType: $userType, " +
+                                "universityId: $universityId" +
+                                "averageRating: $averageRating, " +
+                                "totalReviews: $totalReviews, " +
+                                "isActive: $isActive"
+
+                    )
+                    val user = User(
+                        id = id,
+                        firstName = firstName,
+                        lastName = lastName,
+                        email = email,
+                        age = age,
+                        profileImageUrl = profileImageUrl,
+                        phoneNumber = phoneNumber,
+                        isEmailVerified = isEmailVerified,
+                        userType = userType,
+                        universityId = universityId,
+                        averageRating = averageRating,
+                        totalReviews = totalReviews,
+                        isActive = isActive
+                    )
+                    _user.value = user
+                } else {
+                    _user.value = null
+                }
+
+                _isLoading.value = false
+            } catch (e: Exception) {
+                _isLoading.value = false
+                // Manejar error si quieres
+            }
+        }
     }
 
     // Funciones para manejar eventos de UI

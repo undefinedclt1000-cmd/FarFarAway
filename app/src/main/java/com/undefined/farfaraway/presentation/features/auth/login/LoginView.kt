@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -24,6 +25,8 @@ fun LoginView(
 ) {
     val loginState by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
+    val userDataSaved by viewModel.userDataSaved.collectAsState()
+
 
     Box(
         modifier = modifier,
@@ -51,12 +54,17 @@ fun LoginView(
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    navController.navigate(Routes.HOME.name) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            inclusive = false
-                        }
+                    LaunchedEffect(loginState, userDataSaved) {
+                        if ( userDataSaved) {
+                            println("Login successful and data saved, navigating to home...")
+                            navController.navigate(Routes.HOME.name) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    inclusive = false
+                                }
+                            }
+                            viewModel.resetInitState()                        }
                     }
-                    viewModel.resetInitState()
+
                 }
 
                 else -> {}

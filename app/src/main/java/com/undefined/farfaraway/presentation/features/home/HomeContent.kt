@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.undefined.farfaraway.domain.entities.*
+import com.undefined.farfaraway.presentation.shared.navigation.enums.Routes
 
 @Composable
 fun HomeContent(
@@ -40,6 +41,13 @@ fun HomeContent(
     val financialSummary by viewModel.financialSummary.collectAsState()
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+
+    // Cargar datos cuando la pantalla se muestre por primera vez
+    LaunchedEffect(Unit) {
+        viewModel.loadHomeData()
+    }
+
 
     if (isLoading) {
         Box(
@@ -93,7 +101,6 @@ fun HomeContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues)
             .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -119,7 +126,7 @@ fun HomeContent(
                 FeaturedProperties(
                     properties = featuredProperties,
                     onPropertyClick = viewModel::onPropertyClick,
-                    onSeeAllClick = { /* Navegar a lista completa */ }
+                    onSeeAllClick = { navController.navigate(Routes.RENTS.name) }
                 )
             }
         }
@@ -130,7 +137,7 @@ fun HomeContent(
                 PopularRoutes(
                     routes = popularRoutes,
                     onRouteClick = viewModel::onRouteClick,
-                    onSeeAllClick = { /* Navegar a rutas */ }
+                    onSeeAllClick = { navController.navigate(Routes.ROUTES.name) }
                 )
             }
         }
@@ -140,7 +147,7 @@ fun HomeContent(
             item {
                 FinancialSummaryCard(
                     financialSummary = summary,
-                    onViewDetailsClick = { /* Navegar a finanzas */ }
+                    onViewDetailsClick = { navController.navigate(Routes.FINANCE.name) }
                 )
             }
         }
@@ -151,7 +158,7 @@ fun HomeContent(
                 RecentNotifications(
                     notifications = recentNotifications,
                     onNotificationClick = viewModel::onNotificationClick,
-                    onSeeAllClick = { /* Navegar a notificaciones */ }
+                    onSeeAllClick = { navController.navigate(Routes.NOTIFICATIONS.name) }
                 )
             }
         }
