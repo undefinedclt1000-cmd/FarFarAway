@@ -325,9 +325,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun getGreetingMessage(): String {
-        val user = _user.value
-        val firstName = user?.firstName ?: "Usuario"
+    suspend fun getGreetingMessage(): String {
+        val firstName = dataStoreUseCases
+            .getDataString(Constants.USER_FIRST_NAME)
+            .ifEmpty { "Usuario" }
 
         return when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
             in 5..11 -> "¡Buenos días, $firstName!"

@@ -34,6 +34,7 @@ fun HomeContent(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val greetingMessage = remember { mutableStateOf("Cargando...") }
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val featuredProperties by viewModel.featuredProperties.collectAsState()
@@ -47,6 +48,7 @@ fun HomeContent(
     // Cargar datos cuando la pantalla se muestre por primera vez
     LaunchedEffect(Unit) {
         viewModel.loadHomeData()
+        greetingMessage.value = viewModel.getGreetingMessage()
     }
 
 
@@ -109,7 +111,7 @@ fun HomeContent(
         item {
             SearchHeader(
                 searchQuery = searchQuery,
-                greetingMessage = viewModel.getGreetingMessage(),
+                greetingMessage = greetingMessage.value,
                 onSearchChange = viewModel::onSearchQueryChange,
                 onSearchClick = viewModel::onSearchClick
             )
