@@ -1,4 +1,4 @@
-// RentsViewModel.kt - Corregido para usar LANDLORD
+// RentsViewModel.kt - Corregido para manejar mejor los estados de carga
 package com.undefined.farfaraway.presentation.features.rents
 
 import androidx.lifecycle.ViewModel
@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import com.undefined.farfaraway.domain.entities.*
 import com.undefined.farfaraway.domain.interfaces.IPropertyRepository
 
@@ -17,6 +18,9 @@ class RentsViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _isRefreshing = MutableStateFlow(false) // Nuevo estado para pull-to-refresh
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
@@ -50,6 +54,9 @@ class RentsViewModel @Inject constructor(
     private val _addPropertyResult = MutableSharedFlow<Result<String>>()
     val addPropertyResult: SharedFlow<Result<String>> = _addPropertyResult
 
+    // Estado para controlar la primera carga
+    private val _hasLoadedInitialData = MutableStateFlow(false)
+
     // Propiedades desde Firebase con filtros aplicados
     val properties: StateFlow<List<Property>> = combine(
         propertyRepository.getAvailableProperties(),
@@ -58,7 +65,15 @@ class RentsViewModel @Inject constructor(
         selectedPropertyType,
         maxDistance
     ) { properties, query, priceRange, propertyType, maxDistance ->
-        _isLoading.value = false
+
+        // Solo actualizar isLoading en la primera carga
+        if (!_hasLoadedInitialData.value) {
+            _isLoading.value = false
+            _hasLoadedInitialData.value = true
+        }
+
+        // Limpiar refreshing después de obtener datos
+        _isRefreshing.value = false
         _error.value = null
 
         if (query.isBlank() && propertyType == null && maxDistance == null) {
@@ -90,6 +105,7 @@ class RentsViewModel @Inject constructor(
         }
     }.catch { exception ->
         _isLoading.value = false
+        _isRefreshing.value = false
         _error.value = "Error al cargar propiedades: ${exception.message}"
         emit(emptyList())
     }.stateIn(
@@ -129,9 +145,9 @@ class RentsViewModel @Inject constructor(
     private fun checkUserType() {
         viewModelScope.launch {
             try {
-                val userType = propertyRepository.getCurrentUserType()
-                _currentUserType.value = userType
-                _isOwner.value = userType == UserType.LANDLORD  // Cambio: usar LANDLORD
+                //val userType = propertyRepository.getCurrentUserType()
+                //_currentUserType.value = userType
+                _isOwner.value = true //userType == UserType.LANDLORD  // Cambio: usar LANDLORD
             } catch (e: Exception) {
                 _error.value = "Error al verificar tipo de usuario: ${e.message}"
             }
@@ -151,9 +167,17 @@ class RentsViewModel @Inject constructor(
     }
 
     fun refreshProperties() {
-        _isLoading.value = true
+        _isRefreshing.value = true
         _error.value = null
         // El StateFlow se actualizará automáticamente cuando Firebase tenga nuevos datos
+
+        // Timeout de seguridad para evitar loading infinito
+        viewModelScope.launch {
+            delay(5000) // 5 segundos máximo
+            if (_isRefreshing.value) {
+                _isRefreshing.value = false
+            }
+        }
     }
 
     fun addComment(propertyId: String, content: String) {
@@ -209,7 +233,6 @@ class RentsViewModel @Inject constructor(
         return _commentsMap.value[propertyId] ?: emptyList()
     }
 
-    // Funciones para filtros y búsqueda
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
@@ -326,7 +349,7 @@ class RentsViewModel @Inject constructor(
         return likedProperties.value.contains(propertyId)
     }
 
-    // Funciones para agregar nueva propiedad (solo arrendadores)
+    // Funciones para agregar nueva propiedad (solo arrendadores) - CORREGIDA
     fun addProperty(property: Property) {
         if (!_isOwner.value) {
             _error.value = "Solo los arrendadores pueden agregar propiedades"
@@ -340,7 +363,10 @@ class RentsViewModel @Inject constructor(
                 _addPropertyResult.emit(result)
 
                 if (result.isSuccess) {
-                    refreshProperties()
+                    // NO llamar refreshProperties() aquí porque causa el loading infinito
+                    // Firebase actualizará automáticamente el StateFlow
+                    // Solo limpiamos cualquier error previo
+                    _error.value = null
                 } else {
                     _error.value = "Error al agregar propiedad: ${result.exceptionOrNull()?.message}"
                 }
@@ -364,9 +390,8 @@ class RentsViewModel @Inject constructor(
                 val result = propertyRepository.updateProperty(propertyId, updates)
                 if (result.isFailure) {
                     _error.value = "Error al actualizar propiedad: ${result.exceptionOrNull()?.message}"
-                } else {
-                    refreshProperties()
                 }
+                // No llamar refreshProperties() - Firebase se actualiza automáticamente
             } catch (e: Exception) {
                 _error.value = "Error al actualizar propiedad: ${e.message}"
             }
@@ -384,16 +409,14 @@ class RentsViewModel @Inject constructor(
                 val result = propertyRepository.deleteProperty(propertyId)
                 if (result.isFailure) {
                     _error.value = "Error al eliminar propiedad: ${result.exceptionOrNull()?.message}"
-                } else {
-                    refreshProperties()
                 }
+                // No llamar refreshProperties() - Firebase se actualiza automáticamente
             } catch (e: Exception) {
                 _error.value = "Error al eliminar propiedad: ${e.message}"
             }
         }
     }
 
-    // Función para validar los datos de una propiedad antes de agregarla
     fun validateProperty(property: Property): List<String> {
         val errors = mutableListOf<String>()
 
@@ -419,43 +442,5 @@ class RentsViewModel @Inject constructor(
         }
 
         return errors
-    }
-
-    // Función para crear una propiedad con valores predeterminados
-    fun createDefaultProperty(): Property {
-        return Property(
-            title = "",
-            description = "",
-            address = "",
-            monthlyRent = 0.0,
-            deposit = 0.0,
-            propertyType = PropertyType.PRIVATE_ROOM.name,
-            roomType = RoomType.PRIVATE.name,
-            maxOccupants = 1,
-            currentOccupants = 0,
-            amenities = emptyList(),
-            images = emptyList(),
-            rules = listOf("No fumar", "No mascotas", "Respetar horarios de silencio"),
-            isAvailable = true,
-            isActive = true,
-            distanceToUniversity = 0.0,
-            utilities = UtilitiesInfo(
-                electricityIncluded = false,
-                waterIncluded = false,
-                internetIncluded = false,
-                gasIncluded = false,
-                cleaningIncluded = false,
-                additionalCosts = 0.0,
-                notes = ""
-            ),
-            contactInfo = ContactInfo(
-                phoneNumber = "",
-                whatsappNumber = "",
-                email = "",
-                preferredContactMethod = ContactMethod.WHATSAPP.name,
-                contactHours = "9:00 AM - 8:00 PM",
-                responseTime = "Menos de 2 horas"
-            )
-        )
     }
 }

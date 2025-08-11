@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.undefined.farfaraway.domain.entities.Property
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -24,19 +23,19 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 fun RentsContent(
     paddingValues: PaddingValues,
     navController: NavController,
-    viewModel: RentsViewModel = hiltViewModel()
+    viewModel: RentsViewModel
 ) {
     var selectedProperty by remember { mutableStateOf<Property?>(null) }
     var showSearchAndFilters by remember { mutableStateOf(false) }
-    var showAddPropertyDialog by remember { mutableStateOf(false) }
 
     val properties by viewModel.properties.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+
     val error by viewModel.error.collectAsState()
     val isSubmittingComment by viewModel.isSubmittingComment.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isOwner by viewModel.isOwner.collectAsState()
-    val isAddingProperty by viewModel.isAddingProperty.collectAsState()
 
     // Pull to refresh state
     val pullToRefreshState = rememberPullToRefreshState()
@@ -45,18 +44,6 @@ fun RentsContent(
     // Bottom sheet state
     val bottomSheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
-
-    // Observar resultado de agregar propiedad
-    LaunchedEffect(Unit) {
-        viewModel.addPropertyResult.collect { result ->
-            if (result.isSuccess) {
-                showAddPropertyDialog = false
-                // Mostrar mensaje de éxito
-            } else {
-                // El error se maneja en el ViewModel
-            }
-        }
-    }
 
     // Limpiar error cuando se monte el componente
     LaunchedEffect(Unit) {
@@ -73,20 +60,16 @@ fun RentsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues)
     ) {
-        // Header con botón de agregar propiedad si es arrendador
         RentsHeader(
             isOwner = isOwner,
-            onAddPropertyClick = { showAddPropertyDialog = true },
             searchQuery = searchQuery,
             onSearchQueryChange = viewModel::updateSearchQuery,
             onFilterClick = { showSearchAndFilters = true }
         )
 
-        // Contenido principal con pull-to-refresh
         PullToRefreshBox(
-            isRefreshing = isLoading,
+            isRefreshing = isRefreshing,
             onRefresh = { viewModel.refreshProperties() },
             state = pullToRefreshState,
             modifier = Modifier.fillMaxSize()
@@ -113,7 +96,6 @@ fun RentsContent(
                     EmptyState(
                         isOwner = isOwner,
                         onRetry = viewModel::refreshProperties,
-                        onAddProperty = { showAddPropertyDialog = true },
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -134,7 +116,7 @@ fun RentsContent(
         }
     }
 
-    // BottomSheet para mostrar detalles completos usando API estable
+    // BottomSheet para mostrar detalles completos
     if (showBottomSheet && selectedProperty != null) {
         ModalBottomSheet(
             onDismissRequest = {
@@ -157,23 +139,11 @@ fun RentsContent(
             viewModel = viewModel
         )
     }
-
-    // Dialog para agregar propiedad
-    if (showAddPropertyDialog) {
-        AddPropertyDialog(
-            onDismiss = { showAddPropertyDialog = false },
-            onSave = { property ->
-                viewModel.addProperty(property)
-            },
-            isLoading = isAddingProperty
-        )
-    }
 }
 
 @Composable
 private fun RentsHeader(
     isOwner: Boolean,
-    onAddPropertyClick: () -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onFilterClick: () -> Unit,
@@ -182,36 +152,12 @@ private fun RentsHeader(
     Column(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Título y botón agregar (si es arrendador)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Propiedades disponibles",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.weight(1f)
-            )
-
-            AnimatedVisibility(
-                visible = isOwner,
-                enter = slideInHorizontally() + fadeIn(),
-                exit = slideOutHorizontally() + fadeOut()
-            ) {
-                FloatingActionButton(
-                    onClick = onAddPropertyClick,
-                    modifier = Modifier.size(56.dp),
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Agregar propiedad",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-        }
+        // Título
+        Text(
+            text = "Propiedades disponibles",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -341,7 +287,7 @@ private fun PropertiesList(
 
         // Espacio adicional para que el último elemento no quede pegado al bottom
         item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(80.dp)) // Espacio extra para el FAB
         }
     }
 }
@@ -405,7 +351,6 @@ private fun ErrorState(
 private fun EmptyState(
     isOwner: Boolean,
     onRetry: () -> Unit,
-    onAddProperty: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -427,7 +372,7 @@ private fun EmptyState(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = if (isOwner)
-                "Como arrendador, puedes agregar y gestionar tus propiedades aquí"
+                "Como arrendador, puedes usar el botón + para agregar propiedades"
             else
                 "Intenta ajustar tus filtros de búsqueda o verifica tu conexión a internet",
             style = MaterialTheme.typography.bodyMedium,
@@ -435,19 +380,7 @@ private fun EmptyState(
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (isOwner) {
-            Button(
-                onClick = onAddProperty
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Agregar Propiedad")
-            }
-        } else {
+        if (!isOwner) {
             TextButton(
                 onClick = onRetry
             ) {
@@ -457,90 +390,54 @@ private fun EmptyState(
     }
 }
 
-// Placeholder para SearchFiltersDialog
+// Dialog para filtros avanzados
 @Composable
 fun SearchFiltersDialog(
     onDismiss: () -> Unit,
     viewModel: RentsViewModel
 ) {
+    val priceRange by viewModel.priceRange.collectAsState()
+    val selectedPropertyType by viewModel.selectedPropertyType.collectAsState()
+    val maxDistance by viewModel.maxDistance.collectAsState()
+
+    var tempPriceRange by remember { mutableStateOf(priceRange) }
+    var tempMaxDistance by remember { mutableStateOf(maxDistance ?: 10.0) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Filtros de búsqueda") },
         text = {
-            Column {
-                Text("Aquí irán los filtros avanzados.")
-                // Ejemplo de campo de filtro
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = { /* TODO: manejar cambio */ },
-                    label = { Text("Ubicación") }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Rango de precio")
+                RangeSlider(
+                    value = tempPriceRange.first.toFloat()..tempPriceRange.second.toFloat(),
+                    onValueChange = { range ->
+                        tempPriceRange = Pair(range.start.toDouble(), range.endInclusive.toDouble())
+                    },
+                    valueRange = 0f..30000f,
+                    steps = 30
                 )
+                Text("${tempPriceRange.first.toInt()} - ${tempPriceRange.second.toInt()}")
+
+                Text("Distancia máxima (km)")
+                Slider(
+                    value = tempMaxDistance.toFloat(),
+                    onValueChange = { tempMaxDistance = it.toDouble() },
+                    valueRange = 0f..20f,
+                    steps = 20
+                )
+                Text("${tempMaxDistance.toInt()} km")
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                // TODO: aplicar filtros
+                viewModel.updatePriceRange(tempPriceRange.first, tempPriceRange.second)
+                viewModel.updateMaxDistance(tempMaxDistance)
                 onDismiss()
             }) {
                 Text("Aplicar")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
-    )
-}
-
-// Placeholder para AddPropertyDialog
-@Composable
-fun AddPropertyDialog(
-    onDismiss: () -> Unit,
-    onSave: (Property) -> Unit,
-    isLoading: Boolean
-) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Agregar nueva propiedad") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Título") }
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Descripción") }
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val property = Property(
-                        id = "", // Generar en backend
-                        title = title,
-                        description = description
-                        // Agregar los demás campos requeridos
-                    )
-                    onSave(property)
-                },
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Guardar")
-                }
             }
         },
         dismissButton = {

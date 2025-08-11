@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.undefined.farfaraway.domain.entities.*
 import androidx.compose.animation.AnimatedVisibility
@@ -111,7 +110,6 @@ private fun PropertyHeader(
             .height(220.dp)
             .clickable { onDetailsClick() }
     ) {
-        // Cambiado: usar List<String> en lugar de List<PropertyImage>
         val mainImageUrl = property.images.firstOrNull() ?: ""
 
         AsyncImage(
