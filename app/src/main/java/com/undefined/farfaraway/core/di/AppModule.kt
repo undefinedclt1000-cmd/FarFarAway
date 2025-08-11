@@ -5,6 +5,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.undefined.farfaraway.BuildConfig
 import com.undefined.farfaraway.domain.interfaces.IAuthRepository
 import com.undefined.farfaraway.domain.interfaces.IUserRepository
+import com.undefined.farfaraway.domain.repositories.FinanceFirestoreRepository
+import com.undefined.farfaraway.domain.repositories.FinanceFirestoreRepositoryImpl
 import com.undefined.farfaraway.domain.repository.AuthRepositoryImpl
 import com.undefined.farfaraway.domain.repository.DataStoreRepositoryImpl
 import com.undefined.farfaraway.domain.repository.UserRepositoryImpl
@@ -23,6 +25,7 @@ import com.undefined.farfaraway.domain.useCases.dataStore.GetDataString
 import com.undefined.farfaraway.domain.useCases.dataStore.SetDataBoolean
 import com.undefined.farfaraway.domain.useCases.dataStore.SetDataInt
 import com.undefined.farfaraway.domain.useCases.dataStore.SetDataString
+import com.undefined.farfaraway.domain.useCases.firebase.FinanceFirestoreUseCases
 import com.undefined.farfaraway.domain.useCases.firebase.FireAuthUseCases
 import com.undefined.farfaraway.domain.useCases.firebase.LoginUser
 import com.undefined.farfaraway.domain.useCases.firebase.RegisterUser
@@ -92,4 +95,20 @@ object AppModule {
             loginUser = LoginUser(repository),
             getUser = com.undefined.farfaraway.domain.useCases.firebase.GetUser(repository)
         )
+
+    @Provides
+    @Singleton
+    fun provideFinanceFirestoreRepository(
+        firestore: FirebaseFirestore
+    ): FinanceFirestoreRepository {
+        return FinanceFirestoreRepositoryImpl(firestore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFinanceFirestoreUseCases(
+        repository: FinanceFirestoreRepository
+    ): FinanceFirestoreUseCases {
+        return FinanceFirestoreUseCases(repository)
+    }
 }

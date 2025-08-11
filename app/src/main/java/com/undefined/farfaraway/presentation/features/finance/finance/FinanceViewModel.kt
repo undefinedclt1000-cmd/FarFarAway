@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.undefined.farfaraway.core.Constants
 import com.undefined.farfaraway.domain.entities.*
 import com.undefined.farfaraway.domain.useCases.dataStore.DataStoreUseCases
+import com.undefined.farfaraway.domain.useCases.firebase.FinanceFirestoreUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,13 +13,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
+import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
 
 @HiltViewModel
 class FinanceViewModel @Inject constructor(
-    private val dataStoreUseCases: DataStoreUseCases
-    // Aquí agregarás los use cases de finanzas cuando los implementes
-    // private val financeUseCases: FinanceUseCases
-): ViewModel() {
+    private val dataStoreUseCases: DataStoreUseCases,
+    private val firestoreUseCases: FinanceFirestoreUseCases
+) : ViewModel() {
+
 
     // Estado del perfil financiero del usuario
     private val _financialProfile = MutableStateFlow<FinancialProfile?>(null)
@@ -78,19 +81,24 @@ class FinanceViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Por ahora cargamos datos de ejemplo
-                loadSampleData()
-
-                // Código real para cuando implementes los use cases:
-                /*
-                val userId = dataStoreUseCases.getDataString(Constants.USER_UID)
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
                 if (userId.isNotEmpty()) {
-                    launch { loadFinancialProfile(userId) }
-                    launch { loadExpenses(userId) }
-                    launch { loadCurrentBudget(userId) }
-                    launch { calculateFinancialSummary(userId) }
+                    // Escuchar perfil financiero
+                    launch {
+                        firestoreUseCases.getFinancialProfile(userId).collect { profile ->
+                            _financialProfile.value = profile
+                            calculateFinancialSummary()
+                        }
+                    }
+                    // Escuchar gastos
+                    launch {
+                        firestoreUseCases.getExpenses(userId).collect { expensesList ->
+                            _expenses.value = expensesList
+                            _totalItems.value = expensesList.size
+                            calculateFinancialSummary()
+                        }
+                    }
                 }
-                */
             } catch (e: Exception) {
                 _errorMessage.value = "Error al cargar datos financieros: ${e.message}"
             } finally {
@@ -98,6 +106,7 @@ class FinanceViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun loadSampleData() {
         // Perfil financiero de ejemplo
@@ -220,29 +229,33 @@ class FinanceViewModel @Inject constructor(
                     return@launch
                 }
 
-                val currentProfile = _financialProfile.value
-                val updatedProfile = if (currentProfile != null) {
-                    currentProfile.copy(
-                        monthlyIncome = if (_incomeFrequency.value == IncomeFrequency.MONTHLY) amount else amount * 4.33,
-                        weeklyIncome = if (_incomeFrequency.value == IncomeFrequency.WEEKLY) amount else amount / 4.33,
-                        incomeFrequency = _incomeFrequency.value.name
-                    )
-                } else {
-                    FinancialProfile(
-                        id = "fp_${System.currentTimeMillis()}",
-                        userId = dataStoreUseCases.getDataString(Constants.USER_UID),
-                        monthlyIncome = if (_incomeFrequency.value == IncomeFrequency.MONTHLY) amount else amount * 4.33,
-                        weeklyIncome = if (_incomeFrequency.value == IncomeFrequency.WEEKLY) amount else amount / 4.33,
-                        incomeFrequency = _incomeFrequency.value.name
-                    )
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                // Log para verificar userId
+                android.util.Log.d("FinanceViewModel", "userId obtenido en saveIncome: '$userId'")
+
+                if (userId.isEmpty()) {
+                    _errorMessage.value = "No se encontró userId válido."
+                    return@launch
                 }
+
+                val updatedProfile = _financialProfile.value?.copy(
+                    monthlyIncome = if (_incomeFrequency.value == IncomeFrequency.MONTHLY) amount else amount * 4.33,
+                    weeklyIncome = if (_incomeFrequency.value == IncomeFrequency.WEEKLY) amount else amount / 4.33,
+                    incomeFrequency = _incomeFrequency.value.name
+                ) ?: FinancialProfile(
+                    id = userId,  // <---- usar userId como id único
+                    userId = userId,
+                    monthlyIncome = if (_incomeFrequency.value == IncomeFrequency.MONTHLY) amount else amount * 4.33,
+                    weeklyIncome = if (_incomeFrequency.value == IncomeFrequency.WEEKLY) amount else amount / 4.33,
+                    incomeFrequency = _incomeFrequency.value.name,
+                    isActive = true
+                )
 
                 _financialProfile.value = updatedProfile
                 hideIncomeDialog()
                 calculateFinancialSummary()
 
-                // Aquí implementarás la lógica para guardar en Firebase
-                // financeUseCases.saveFinancialProfile(updatedProfile)
+                firestoreUseCases.saveFinancialProfile(updatedProfile) // Guardar en Firebase
 
             } catch (e: Exception) {
                 _errorMessage.value = "Error al guardar ingresos: ${e.message}"
@@ -275,12 +288,16 @@ class FinanceViewModel @Inject constructor(
                 val amount = _expenseAmount.value.toDoubleOrNull()
                 if (amount == null || amount <= 0) {
                     _errorMessage.value = "Por favor ingresa un monto válido"
+                    Log.d("FinanceViewModel", "Monto inválido para gasto: ${_expenseAmount.value}")
                     return@launch
                 }
 
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                Log.d("FinanceViewModel", "Guardando gasto para userId=$userId, amount=$amount")
+
                 val newExpense = Expense(
                     id = "exp_${System.currentTimeMillis()}",
-                    userId = dataStoreUseCases.getDataString(Constants.USER_UID),
+                    userId = userId,
                     amount = amount,
                     category = _expenseCategory.value.name,
                     description = _expenseDescription.value,
@@ -288,18 +305,18 @@ class FinanceViewModel @Inject constructor(
                     isRecurring = false
                 )
 
-                val updatedExpenses = _expenses.value + newExpense
-                _expenses.value = updatedExpenses
-                _totalItems.value = updatedExpenses.size
+                _expenses.value = _expenses.value + newExpense
+                _totalItems.value = _expenses.value.size
 
                 hideExpenseDialog()
                 calculateFinancialSummary()
 
-                // Aquí implementarás la lógica para guardar en Firebase
-                // financeUseCases.saveExpense(newExpense)
+                firestoreUseCases.saveExpense(newExpense)
+                Log.d("FinanceViewModel", "Gasto guardado en Firestore: $newExpense")
 
             } catch (e: Exception) {
                 _errorMessage.value = "Error al guardar gasto: ${e.message}"
+                Log.e("FinanceViewModel", "Error guardando gasto", e)
             }
         }
     }
