@@ -1,386 +1,159 @@
+// RentsViewModel.kt - Corregido para usar LANDLORD
 package com.undefined.farfaraway.presentation.features.rents
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.undefined.farfaraway.domain.entities.*
+import com.undefined.farfaraway.domain.interfaces.IPropertyRepository
 
 @HiltViewModel
 class RentsViewModel @Inject constructor(
-    // Aquí inyectarías tu repository cuando lo tengas
-    // private val propertyRepository: PropertyRepository
+    private val propertyRepository: IPropertyRepository
 ): ViewModel(){
-
-    private val _properties = MutableStateFlow<List<Property>>(emptyList())
-    val properties: StateFlow<List<Property>> = _properties
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _totalItems = MutableStateFlow(0)
-    val totalItems: StateFlow<Int> = _totalItems
-
-    // Estados para likes y comentarios
-    private val _likedProperties = MutableStateFlow<Set<String>>(emptySet())
-    val likedProperties: StateFlow<Set<String>> = _likedProperties
-
-    private val _comments = MutableStateFlow<Map<String, List<Comment>>>(emptyMap())
-    val comments: StateFlow<Map<String, List<Comment>>> = _comments
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
     private val _isSubmittingComment = MutableStateFlow(false)
     val isSubmittingComment: StateFlow<Boolean> = _isSubmittingComment
 
-    init {
-        loadProperties()
-        loadLikedProperties()
-        loadComments()
-    }
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
 
-    private fun loadProperties() {
+    private val _isOwner = MutableStateFlow(false)
+    val isOwner: StateFlow<Boolean> = _isOwner
+
+    private val _currentUserType = MutableStateFlow<UserType?>(null)
+    val currentUserType: StateFlow<UserType?> = _currentUserType
+
+    // Filtros de búsqueda
+    private val _priceRange = MutableStateFlow(Pair(0.0, 20000.0))
+    val priceRange: StateFlow<Pair<Double, Double>> = _priceRange
+
+    private val _selectedPropertyType = MutableStateFlow<PropertyType?>(null)
+    val selectedPropertyType: StateFlow<PropertyType?> = _selectedPropertyType
+
+    private val _maxDistance = MutableStateFlow<Double?>(null)
+    val maxDistance: StateFlow<Double?> = _maxDistance
+
+    // Estado para agregar nueva propiedad
+    private val _isAddingProperty = MutableStateFlow(false)
+    val isAddingProperty: StateFlow<Boolean> = _isAddingProperty
+
+    private val _addPropertyResult = MutableSharedFlow<Result<String>>()
+    val addPropertyResult: SharedFlow<Result<String>> = _addPropertyResult
+
+    // Propiedades desde Firebase con filtros aplicados
+    val properties: StateFlow<List<Property>> = combine(
+        propertyRepository.getAvailableProperties(),
+        searchQuery,
+        priceRange,
+        selectedPropertyType,
+        maxDistance
+    ) { properties, query, priceRange, propertyType, maxDistance ->
+        _isLoading.value = false
+        _error.value = null
+
+        if (query.isBlank() && propertyType == null && maxDistance == null) {
+            properties.filter { it.monthlyRent in priceRange.first..priceRange.second }
+        } else {
+            properties.filter { property ->
+                var matches = true
+
+                if (query.isNotBlank()) {
+                    matches = matches && (
+                            property.title.contains(query, ignoreCase = true) ||
+                                    property.description.contains(query, ignoreCase = true) ||
+                                    property.address.contains(query, ignoreCase = true)
+                            )
+                }
+
+                matches = matches && property.monthlyRent in priceRange.first..priceRange.second
+
+                propertyType?.let { type ->
+                    matches = matches && property.propertyType == type.name
+                }
+
+                maxDistance?.let { distance ->
+                    matches = matches && property.distanceToUniversity <= distance
+                }
+
+                matches
+            }
+        }
+    }.catch { exception ->
+        _isLoading.value = false
+        _error.value = "Error al cargar propiedades: ${exception.message}"
+        emit(emptyList())
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    // Likes del usuario desde Firebase
+    val likedProperties: StateFlow<Set<String>> = propertyRepository.getUserPropertyLikes()
+        .catch {
+            emit(emptySet())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptySet()
+        )
+
+    // Comentarios agrupados por propiedad
+    private val _commentsMap = MutableStateFlow<Map<String, List<Comment>>>(emptyMap())
+    val commentsMap: StateFlow<Map<String, List<Comment>>> = _commentsMap
+
+    init {
+        checkUserType()
+
+        // Cargar comentarios para las propiedades visibles
         viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                // Aquí cargarías las propiedades desde tu repository
-                // Por ahora uso datos de ejemplo
-                val sampleProperties = getSampleProperties()
-                _properties.value = sampleProperties
-                _totalItems.value = sampleProperties.size
-            } catch (e: Exception) {
-                // Manejar error
-                _properties.value = emptyList()
-                _totalItems.value = 0
-            } finally {
-                _isLoading.value = false
+            properties.collect { propertiesList ->
+                propertiesList.forEach { property ->
+                    loadCommentsForProperty(property.id)
+                }
             }
         }
     }
 
-    // Datos de ejemplo - reemplaza esto con tu lógica real de carga de datos
-    private fun getSampleProperties(): List<Property> {
-        return listOf(
-            Property(
-                id = "1",
-                title = "Cuarto privado cerca de la Universidad",
-                description = "Hermoso cuarto privado en casa compartida, muy cerca de la universidad. Ambiente tranquilo y seguro, perfecto para estudiantes. Incluye acceso a cocina, sala común y jardín.",
-                address = "Av. Universidad 123, Tula de Allende",
-                latitude = 20.0536,
-                longitude = -99.3420,
-                monthlyRent = 3500.0,
-                deposit = 3500.0,
-                propertyType = PropertyType.PRIVATE_ROOM.name,
-                roomType = RoomType.PRIVATE.name,
-                maxOccupants = 1,
-                currentOccupants = 0,
-                amenities = listOf("WiFi", "Cocina equipada", "Jardín", "Estacionamiento", "Área de estudio"),
-                images = listOf(
-                    PropertyImage(
-                        id = "img1",
-                        propertyId = "1",
-                        imageUrl = "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
-                        isMainImage = true,
-                        caption = "Vista general del cuarto"
-                    ),
-                    PropertyImage(
-                        id = "img2",
-                        propertyId = "1",
-                        imageUrl = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800",
-                        isMainImage = false,
-                        caption = "Área de descanso"
-                    ),
-                    PropertyImage(
-                        id = "img3",
-                        propertyId = "1",
-                        imageUrl = "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800",
-                        isMainImage = false,
-                        caption = "Cocina compartida"
-                    )
-                ),
-                rules = listOf(
-                    "No fumar en áreas comunes",
-                    "Respeto por horarios de silencio (10 PM - 7 AM)",
-                    "Mantener limpias las áreas compartidas",
-                    "No mascotas"
-                ),
-                isAvailable = true,
-                distanceToUniversity = 0.8,
-                averageRating = 4.5,
-                totalReviews = 12,
-                utilities = UtilitiesInfo(
-                    electricityIncluded = true,
-                    waterIncluded = true,
-                    internetIncluded = true,
-                    gasIncluded = false,
-                    cleaningIncluded = false,
-                    additionalCosts = 200.0,
-                    notes = "Gas y limpieza se cobran por separado"
-                ),
-                contactInfo = ContactInfo(
-                    phoneNumber = "775-123-4567",
-                    whatsappNumber = "775-123-4567",
-                    email = "propietario@ejemplo.com",
-                    preferredContactMethod = ContactMethod.WHATSAPP.name
-                ),
-                likesCount = 24,
-                commentsCount = 8
-            ),
-            Property(
-                id = "2",
-                title = "Departamento completo amueblado",
-                description = "Departamento de 2 recámaras completamente amueblado, ideal para estudiantes que buscan comodidad y privacidad. Ubicado en zona segura con fácil acceso al transporte público.",
-                address = "Calle Hidalgo 456, Tula de Allende",
-                latitude = 20.0590,
-                longitude = -99.3380,
-                monthlyRent = 8500.0,
-                deposit = 8500.0,
-                propertyType = PropertyType.APARTMENT.name,
-                roomType = RoomType.PRIVATE.name,
-                maxOccupants = 3,
-                currentOccupants = 1,
-                amenities = listOf("WiFi", "Cocina completa", "Lavadora", "TV", "Aire acondicionado", "Estacionamiento"),
-                images = listOf(
-                    PropertyImage(
-                        id = "img4",
-                        propertyId = "2",
-                        imageUrl = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800",
-                        isMainImage = true,
-                        caption = "Sala principal"
-                    ),
-                    PropertyImage(
-                        id = "img5",
-                        propertyId = "2",
-                        imageUrl = "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800",
-                        isMainImage = false,
-                        caption = "Cocina moderna"
-                    )
-                ),
-                rules = listOf(
-                    "Máximo 3 personas",
-                    "No fiestas",
-                    "Horario de visitas hasta las 10 PM",
-                    "Mascotas permitidas con depósito adicional"
-                ),
-                isAvailable = true,
-                distanceToUniversity = 1.2,
-                averageRating = 4.8,
-                totalReviews = 23,
-                utilities = UtilitiesInfo(
-                    electricityIncluded = false,
-                    waterIncluded = true,
-                    internetIncluded = true,
-                    gasIncluded = true,
-                    cleaningIncluded = false,
-                    additionalCosts = 800.0,
-                    notes = "Electricidad por separado, aproximadamente $800 mensuales"
-                ),
-                contactInfo = ContactInfo(
-                    phoneNumber = "775-987-6543",
-                    whatsappNumber = "775-987-6543",
-                    email = "depto.tula@ejemplo.com",
-                    preferredContactMethod = ContactMethod.WHATSAPP.name
-                ),
-                likesCount = 45,
-                commentsCount = 15
-            ),
-            Property(
-                id = "3",
-                title = "Casa compartida para estudiantes",
-                description = "Casa grande con 4 habitaciones individuales, perfecta para estudiantes. Ambiente familiar y seguro. Incluye todas las amenidades necesarias para una estancia cómoda.",
-                address = "Calle Morelos 789, Tula de Allende",
-                latitude = 20.0520,
-                longitude = -99.3450,
-                monthlyRent = 2800.0,
-                deposit = 2800.0,
-                propertyType = PropertyType.SHARED_ROOM.name,
-                roomType = RoomType.SHARED.name,
-                maxOccupants = 4,
-                currentOccupants = 2,
-                amenities = listOf("WiFi", "Cocina grande", "Sala común", "Jardín", "Lavandería", "Área de estudio"),
-                images = listOf(
-                    PropertyImage(
-                        id = "img6",
-                        propertyId = "3",
-                        imageUrl = "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800",
-                        isMainImage = true,
-                        caption = "Fachada de la casa"
-                    ),
-                    PropertyImage(
-                        id = "img7",
-                        propertyId = "3",
-                        imageUrl = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800",
-                        isMainImage = false,
-                        caption = "Habitación tipo"
-                    )
-                ),
-                rules = listOf(
-                    "Convivencia respetuosa entre compañeros",
-                    "Limpieza rotativa de áreas comunes",
-                    "No ruido después de las 11 PM",
-                    "Visitas con previo aviso"
-                ),
-                isAvailable = true,
-                distanceToUniversity = 0.5,
-                averageRating = 4.2,
-                totalReviews = 18,
-                utilities = UtilitiesInfo(
-                    electricityIncluded = true,
-                    waterIncluded = true,
-                    internetIncluded = true,
-                    gasIncluded = true,
-                    cleaningIncluded = true,
-                    additionalCosts = 0.0,
-                    notes = "Todos los servicios incluidos"
-                ),
-                contactInfo = ContactInfo(
-                    phoneNumber = "775-555-0123",
-                    whatsappNumber = "775-555-0123",
-                    email = "casa.estudiantes@ejemplo.com",
-                    preferredContactMethod = ContactMethod.PHONE.name
-                ),
-                likesCount = 18,
-                commentsCount = 9
-            ),
-            Property(
-                id = "4",
-                title = "Estudio moderno cerca del centro",
-                description = "Estudio completamente equipado y moderno, perfecto para una persona. Ubicación privilegiada cerca del centro de Tula con fácil acceso a servicios y transporte.",
-                address = "Av. 5 de Mayo 321, Centro, Tula de Allende",
-                latitude = 20.0570,
-                longitude = -99.3400,
-                monthlyRent = 4200.0,
-                deposit = 4200.0,
-                propertyType = PropertyType.STUDIO.name,
-                roomType = RoomType.SINGLE.name,
-                maxOccupants = 1,
-                currentOccupants = 0,
-                amenities = listOf("WiFi", "Kitchenette", "Aire acondicionado", "TV", "Escritorio", "Clóset empotrado"),
-                images = listOf(
-                    PropertyImage(
-                        id = "img8",
-                        propertyId = "4",
-                        imageUrl = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800",
-                        isMainImage = true,
-                        caption = "Vista general del estudio"
-                    )
-                ),
-                rules = listOf(
-                    "Una sola persona",
-                    "No mascotas",
-                    "Cuidado del mobiliario",
-                    "Visitas ocasionales permitidas"
-                ),
-                isAvailable = false,
-                distanceToUniversity = 1.5,
-                averageRating = 4.6,
-                totalReviews = 8,
-                utilities = UtilitiesInfo(
-                    electricityIncluded = false,
-                    waterIncluded = true,
-                    internetIncluded = true,
-                    gasIncluded = true,
-                    cleaningIncluded = false,
-                    additionalCosts = 400.0,
-                    notes = "Electricidad por medidor individual"
-                ),
-                contactInfo = ContactInfo(
-                    phoneNumber = "775-444-5566",
-                    whatsappNumber = "775-444-5566",
-                    email = "estudio.centro@ejemplo.com",
-                    preferredContactMethod = ContactMethod.EMAIL.name
-                ),
-                likesCount = 31,
-                commentsCount = 12
-            )
-        )
+    private fun checkUserType() {
+        viewModelScope.launch {
+            try {
+                val userType = propertyRepository.getCurrentUserType()
+                _currentUserType.value = userType
+                _isOwner.value = userType == UserType.LANDLORD  // Cambio: usar LANDLORD
+            } catch (e: Exception) {
+                _error.value = "Error al verificar tipo de usuario: ${e.message}"
+            }
+        }
+    }
+
+    private fun loadCommentsForProperty(propertyId: String) {
+        viewModelScope.launch {
+            propertyRepository.getPropertyComments(propertyId)
+                .catch { /* Manejar error silenciosamente */ }
+                .collect { comments ->
+                    val currentMap = _commentsMap.value.toMutableMap()
+                    currentMap[propertyId] = comments
+                    _commentsMap.value = currentMap
+                }
+        }
     }
 
     fun refreshProperties() {
-        loadProperties()
-    }
-
-    // Funciones para manejar likes
-    private fun loadLikedProperties() {
-        // Aquí cargarías los likes del usuario actual desde tu repository
-        // Por ahora simulo algunos likes
-        _likedProperties.value = setOf("1", "3")
-    }
-
-    fun togglePropertyLike(propertyId: String) {
-        viewModelScope.launch {
-            try {
-                val currentLikes = _likedProperties.value.toMutableSet()
-                val updatedProperties = _properties.value.toMutableList()
-                val propertyIndex = updatedProperties.indexOfFirst { it.id == propertyId }
-
-                if (propertyIndex != -1) {
-                    val property = updatedProperties[propertyIndex]
-
-                    if (currentLikes.contains(propertyId)) {
-                        // Quitar like
-                        currentLikes.remove(propertyId)
-                        updatedProperties[propertyIndex] = property.copy(
-                            likesCount = maxOf(0, property.likesCount - 1)
-                        )
-                        // Aquí harías la llamada al repository para quitar el like
-                    } else {
-                        // Agregar like
-                        currentLikes.add(propertyId)
-                        updatedProperties[propertyIndex] = property.copy(
-                            likesCount = property.likesCount + 1
-                        )
-                        // Aquí harías la llamada al repository para agregar el like
-                    }
-
-                    _likedProperties.value = currentLikes
-                    _properties.value = updatedProperties
-                }
-            } catch (e: Exception) {
-                // Manejar error
-            }
-        }
-    }
-
-    // Funciones para manejar comentarios
-    private fun loadComments() {
-        // Aquí cargarías los comentarios desde tu repository
-        // Por ahora simulo algunos comentarios
-        val sampleComments = mapOf(
-            "1" to listOf(
-                Comment(
-                    id = "c1",
-                    userId = "user1",
-                    propertyId = "1",
-                    content = "Excelente lugar, muy limpio y cómodo. Lo recomiendo mucho!",
-                    likes = 5,
-                    userName = "María García",
-                    userImage = "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=100"
-                ),
-                Comment(
-                    id = "c2",
-                    userId = "user2",
-                    propertyId = "1",
-                    content = "La ubicación es perfecta para estudiantes.",
-                    likes = 2,
-                    userName = "Carlos López",
-                    userImage = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"
-                )
-            ),
-            "2" to listOf(
-                Comment(
-                    id = "c3",
-                    userId = "user3",
-                    propertyId = "2",
-                    content = "Muy espacioso y bien equipado!",
-                    likes = 3,
-                    userName = "Ana Ruiz",
-                    userImage = "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100"
-                )
-            )
-        )
-        _comments.value = sampleComments
+        _isLoading.value = true
+        _error.value = null
+        // El StateFlow se actualizará automáticamente cuando Firebase tenga nuevos datos
     }
 
     fun addComment(propertyId: String, content: String) {
@@ -389,155 +162,114 @@ class RentsViewModel @Inject constructor(
         viewModelScope.launch {
             _isSubmittingComment.value = true
             try {
-                val newComment = Comment(
-                    id = "temp_${System.currentTimeMillis()}",
-                    userId = "current_user", // ID del usuario actual
-                    propertyId = propertyId,
-                    content = content.trim(),
-                    likes = 0,
-                    userName = "Usuario Actual", // Nombre del usuario actual
-                    userImage = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                )
-
-                val currentComments = _comments.value.toMutableMap()
-                val propertyComments = currentComments[propertyId]?.toMutableList() ?: mutableListOf()
-                propertyComments.add(0, newComment) // Agregar al inicio
-                currentComments[propertyId] = propertyComments
-                _comments.value = currentComments
-
-                // Actualizar contador de comentarios en la propiedad
-                val updatedProperties = _properties.value.toMutableList()
-                val propertyIndex = updatedProperties.indexOfFirst { it.id == propertyId }
-                if (propertyIndex != -1) {
-                    val property = updatedProperties[propertyIndex]
-                    updatedProperties[propertyIndex] = property.copy(
-                        commentsCount = property.commentsCount + 1
-                    )
-                    _properties.value = updatedProperties
+                val result = propertyRepository.addComment(propertyId, content)
+                if (result.isFailure) {
+                    _error.value = "Error al agregar comentario: ${result.exceptionOrNull()?.message}"
                 }
-
-                // Aquí harías la llamada al repository para guardar el comentario
-
             } catch (e: Exception) {
-                // Manejar error
+                _error.value = "Error al agregar comentario: ${e.message}"
             } finally {
                 _isSubmittingComment.value = false
             }
         }
     }
 
-    fun getCommentsForProperty(propertyId: String): List<Comment> {
-        return _comments.value[propertyId] ?: emptyList()
-    }
-
-    fun isPropertyLiked(propertyId: String): Boolean {
-        return _likedProperties.value.contains(propertyId)
-    }
-
-    // Estados para likes en comentarios
-    private val _likedComments = MutableStateFlow<Set<String>>(emptySet())
-    val likedComments: StateFlow<Set<String>> = _likedComments
-
-    // Función para manejar likes en comentarios
-    fun toggleCommentLike(commentId: String) {
-        viewModelScope.launch {
-            try {
-                val currentLikes = _likedComments.value.toMutableSet()
-                val currentComments = _comments.value.toMutableMap()
-
-                // Buscar el comentario en todas las propiedades
-                var foundComment: Comment? = null
-                var propertyId: String? = null
-
-                for ((propId, commentsList) in currentComments) {
-                    val commentIndex = commentsList.indexOfFirst { it.id == commentId }
-                    if (commentIndex != -1) {
-                        foundComment = commentsList[commentIndex]
-                        propertyId = propId
-                        break
-                    }
-                }
-
-                if (foundComment != null && propertyId != null) {
-                    val updatedComments = currentComments[propertyId]!!.toMutableList()
-                    val commentIndex = updatedComments.indexOfFirst { it.id == commentId }
-
-                    if (currentLikes.contains(commentId)) {
-                        // Quitar like
-                        currentLikes.remove(commentId)
-                        updatedComments[commentIndex] = foundComment.copy(
-                            likes = maxOf(0, foundComment.likes - 1)
-                        )
-                    } else {
-                        // Agregar like
-                        currentLikes.add(commentId)
-                        updatedComments[commentIndex] = foundComment.copy(
-                            likes = foundComment.likes + 1
-                        )
-                    }
-
-                    currentComments[propertyId] = updatedComments
-                    _likedComments.value = currentLikes
-                    _comments.value = currentComments
-                }
-            } catch (e: Exception) {
-                // Manejar error
-            }
-        }
-    }
-
-    fun isCommentLiked(commentId: String): Boolean {
-        return _likedComments.value.contains(commentId)
-    }
-
-    // Función para agregar respuestas a comentarios (futuro)
     fun addReplyToComment(parentCommentId: String, propertyId: String, content: String) {
         if (content.isBlank()) return
 
         viewModelScope.launch {
             _isSubmittingComment.value = true
             try {
-                val newReply = Comment(
-                    id = "reply_${System.currentTimeMillis()}",
-                    userId = "current_user",
-                    propertyId = propertyId,
-                    content = content.trim(),
-                    parentCommentId = parentCommentId,
-                    likes = 0,
-                    userName = "Usuario Actual",
-                    userImage = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                )
-
-                val currentComments = _comments.value.toMutableMap()
-                val propertyComments = currentComments[propertyId]?.toMutableList() ?: mutableListOf()
-
-                // Encontrar la posición después del comentario padre para insertar la respuesta
-                val parentIndex = propertyComments.indexOfFirst { it.id == parentCommentId }
-                if (parentIndex != -1) {
-                    propertyComments.add(parentIndex + 1, newReply)
-                } else {
-                    propertyComments.add(0, newReply)
+                val result = propertyRepository.addComment(propertyId, content, parentCommentId)
+                if (result.isFailure) {
+                    _error.value = "Error al agregar respuesta: ${result.exceptionOrNull()?.message}"
                 }
-
-                currentComments[propertyId] = propertyComments
-                _comments.value = currentComments
-
-                // Actualizar contador de comentarios en la propiedad
-                val updatedProperties = _properties.value.toMutableList()
-                val propertyIndex = updatedProperties.indexOfFirst { it.id == propertyId }
-                if (propertyIndex != -1) {
-                    val property = updatedProperties[propertyIndex]
-                    updatedProperties[propertyIndex] = property.copy(
-                        commentsCount = property.commentsCount + 1
-                    )
-                    _properties.value = updatedProperties
-                }
-
             } catch (e: Exception) {
-                // Manejar error
+                _error.value = "Error al agregar respuesta: ${e.message}"
             } finally {
                 _isSubmittingComment.value = false
             }
+        }
+    }
+
+    fun deleteComment(commentId: String, propertyId: String) {
+        viewModelScope.launch {
+            try {
+                val result = propertyRepository.deleteComment(commentId, propertyId)
+                if (result.isFailure) {
+                    _error.value = "Error al eliminar comentario: ${result.exceptionOrNull()?.message}"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error al eliminar comentario: ${e.message}"
+            }
+        }
+    }
+
+    fun getCommentsForProperty(propertyId: String): List<Comment> {
+        return _commentsMap.value[propertyId] ?: emptyList()
+    }
+
+    // Funciones para filtros y búsqueda
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updatePriceRange(minPrice: Double, maxPrice: Double) {
+        _priceRange.value = Pair(minPrice, maxPrice)
+    }
+
+    fun updateSelectedPropertyType(propertyType: PropertyType?) {
+        _selectedPropertyType.value = propertyType
+    }
+
+    fun updateMaxDistance(distance: Double?) {
+        _maxDistance.value = distance
+    }
+
+    fun clearFilters() {
+        _searchQuery.value = ""
+        _priceRange.value = Pair(0.0, 20000.0)
+        _selectedPropertyType.value = null
+        _maxDistance.value = null
+    }
+
+    // Funciones para búsqueda avanzada
+    fun searchProperties(
+        query: String,
+        priceMin: Double? = null,
+        priceMax: Double? = null,
+        propertyType: PropertyType? = null,
+        maxDistance: Double? = null
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val results = propertyRepository.searchProperties(
+                    query = query,
+                    priceMin = priceMin,
+                    priceMax = priceMax,
+                    propertyType = propertyType,
+                    maxDistance = maxDistance
+                )
+                // Los resultados se manejan a través de los filtros locales
+                updateSearchQuery(query)
+                priceMin?.let { min ->
+                    priceMax?.let { max -> updatePriceRange(min, max) }
+                }
+                updateSelectedPropertyType(propertyType)
+                updateMaxDistance(maxDistance)
+            } catch (e: Exception) {
+                _error.value = "Error en búsqueda: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // Incrementar contador de vistas
+    fun incrementPropertyViews(propertyId: String) {
+        viewModelScope.launch {
+            propertyRepository.incrementViewCount(propertyId)
         }
     }
 
@@ -553,5 +285,177 @@ class RentsViewModel @Inject constructor(
             diff < 604800000 -> "${diff / 86400000} d"
             else -> "${diff / 604800000} sem"
         }
+    }
+
+    // Función para limpiar errores
+    fun clearError() {
+        _error.value = null
+    }
+
+    // Función para obtener estadísticas de la propiedad
+    fun getPropertyStats(): StateFlow<PropertyStats> = properties.map { propertiesList ->
+        PropertyStats(
+            totalProperties = propertiesList.size,
+            availableProperties = propertiesList.count { it.isAvailable },
+            averageRent = if (propertiesList.isNotEmpty()) {
+                propertiesList.sumOf { it.monthlyRent } / propertiesList.size
+            } else 0.0,
+            propertyTypeDistribution = propertiesList.groupingBy { it.propertyType }.eachCount()
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = PropertyStats()
+    )
+
+    // Funciones para manejar likes
+    fun togglePropertyLike(propertyId: String) {
+        viewModelScope.launch {
+            try {
+                val result = propertyRepository.togglePropertyLike(propertyId)
+                if (result.isFailure) {
+                    _error.value = "Error al actualizar like: ${result.exceptionOrNull()?.message}"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error al actualizar like: ${e.message}"
+            }
+        }
+    }
+
+    fun isPropertyLiked(propertyId: String): Boolean {
+        return likedProperties.value.contains(propertyId)
+    }
+
+    // Funciones para agregar nueva propiedad (solo arrendadores)
+    fun addProperty(property: Property) {
+        if (!_isOwner.value) {
+            _error.value = "Solo los arrendadores pueden agregar propiedades"
+            return
+        }
+
+        viewModelScope.launch {
+            _isAddingProperty.value = true
+            try {
+                val result = propertyRepository.addProperty(property)
+                _addPropertyResult.emit(result)
+
+                if (result.isSuccess) {
+                    refreshProperties()
+                } else {
+                    _error.value = "Error al agregar propiedad: ${result.exceptionOrNull()?.message}"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error al agregar propiedad: ${e.message}"
+                _addPropertyResult.emit(Result.failure(e))
+            } finally {
+                _isAddingProperty.value = false
+            }
+        }
+    }
+
+    fun updateProperty(propertyId: String, updates: Map<String, Any>) {
+        if (!_isOwner.value) {
+            _error.value = "Solo los arrendadores pueden modificar propiedades"
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val result = propertyRepository.updateProperty(propertyId, updates)
+                if (result.isFailure) {
+                    _error.value = "Error al actualizar propiedad: ${result.exceptionOrNull()?.message}"
+                } else {
+                    refreshProperties()
+                }
+            } catch (e: Exception) {
+                _error.value = "Error al actualizar propiedad: ${e.message}"
+            }
+        }
+    }
+
+    fun deleteProperty(propertyId: String) {
+        if (!_isOwner.value) {
+            _error.value = "Solo los arrendadores pueden eliminar propiedades"
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val result = propertyRepository.deleteProperty(propertyId)
+                if (result.isFailure) {
+                    _error.value = "Error al eliminar propiedad: ${result.exceptionOrNull()?.message}"
+                } else {
+                    refreshProperties()
+                }
+            } catch (e: Exception) {
+                _error.value = "Error al eliminar propiedad: ${e.message}"
+            }
+        }
+    }
+
+    // Función para validar los datos de una propiedad antes de agregarla
+    fun validateProperty(property: Property): List<String> {
+        val errors = mutableListOf<String>()
+
+        if (property.title.isBlank()) {
+            errors.add("El título es obligatorio")
+        }
+        if (property.description.isBlank()) {
+            errors.add("La descripción es obligatoria")
+        }
+        if (property.address.isBlank()) {
+            errors.add("La dirección es obligatoria")
+        }
+        if (property.monthlyRent <= 0) {
+            errors.add("El precio debe ser mayor a 0")
+        }
+        if (property.maxOccupants <= 0) {
+            errors.add("El número de ocupantes debe ser mayor a 0")
+        }
+        if (property.contactInfo.phoneNumber.isBlank() &&
+            property.contactInfo.whatsappNumber.isBlank() &&
+            property.contactInfo.email.isBlank()) {
+            errors.add("Debe proporcionar al menos un método de contacto")
+        }
+
+        return errors
+    }
+
+    // Función para crear una propiedad con valores predeterminados
+    fun createDefaultProperty(): Property {
+        return Property(
+            title = "",
+            description = "",
+            address = "",
+            monthlyRent = 0.0,
+            deposit = 0.0,
+            propertyType = PropertyType.PRIVATE_ROOM.name,
+            roomType = RoomType.PRIVATE.name,
+            maxOccupants = 1,
+            currentOccupants = 0,
+            amenities = emptyList(),
+            images = emptyList(),
+            rules = listOf("No fumar", "No mascotas", "Respetar horarios de silencio"),
+            isAvailable = true,
+            isActive = true,
+            distanceToUniversity = 0.0,
+            utilities = UtilitiesInfo(
+                electricityIncluded = false,
+                waterIncluded = false,
+                internetIncluded = false,
+                gasIncluded = false,
+                cleaningIncluded = false,
+                additionalCosts = 0.0,
+                notes = ""
+            ),
+            contactInfo = ContactInfo(
+                phoneNumber = "",
+                whatsappNumber = "",
+                email = "",
+                preferredContactMethod = ContactMethod.WHATSAPP.name,
+                contactHours = "9:00 AM - 8:00 PM",
+                responseTime = "Menos de 2 horas"
+            )
+        )
     }
 }

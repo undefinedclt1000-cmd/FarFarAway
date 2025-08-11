@@ -23,6 +23,7 @@ data class User(
 
 enum class UserType {
     STUDENT,        // Estudiante
-    LANDLORD,       // Arrendador
-    ADMIN
+    LANDLORD,       // Arrendador/Propietario - UNIFICADO
+    ADMIN           // Admin - eliminamos OWNER para evitar confusión
 }
+

@@ -111,11 +111,11 @@ private fun PropertyHeader(
             .height(220.dp)
             .clickable { onDetailsClick() }
     ) {
-        val mainImage = property.images.firstOrNull { it.isMainImage }
-            ?: property.images.firstOrNull()
+        // Cambiado: usar List<String> en lugar de List<PropertyImage>
+        val mainImageUrl = property.images.firstOrNull() ?: ""
 
         AsyncImage(
-            model = mainImage?.imageUrl ?: "",
+            model = mainImageUrl,
             contentDescription = "Imagen de ${property.title}",
             modifier = Modifier
                 .fillMaxSize()
@@ -270,19 +270,25 @@ private fun PropertyInfoChips(
     ) {
         // Tipo de propiedad
         InfoChip(
-            icon = when (PropertyType.valueOf(property.propertyType)) {
-                PropertyType.HOUSE -> Icons.Default.Home
-                PropertyType.APARTMENT -> Icons.Default.Apartment
-                PropertyType.PRIVATE_ROOM -> Icons.Default.Bed
-                PropertyType.SHARED_ROOM -> Icons.Default.Group
-                PropertyType.STUDIO -> Icons.Default.SingleBed
+            icon = when {
+                property.propertyType == PropertyType.HOUSE.name -> Icons.Default.Home
+                property.propertyType == PropertyType.APARTMENT.name -> Icons.Default.Apartment
+                property.propertyType == PropertyType.PRIVATE_ROOM.name -> Icons.Default.Bed
+                property.propertyType == PropertyType.SHARED_ROOM.name -> Icons.Default.Group
+                property.propertyType == PropertyType.STUDIO.name -> Icons.Default.SingleBed
+                property.propertyType == PropertyType.ENTIRE_APARTMENT.name -> Icons.Default.Apartment
+                property.propertyType == PropertyType.DORMITORY.name -> Icons.Default.School
+                else -> Icons.Default.Home
             },
-            text = when (PropertyType.valueOf(property.propertyType)) {
-                PropertyType.HOUSE -> "Casa"
-                PropertyType.APARTMENT -> "Depto"
-                PropertyType.PRIVATE_ROOM -> "Cuarto"
-                PropertyType.SHARED_ROOM -> "Compartido"
-                PropertyType.STUDIO -> "Estudio"
+            text = when {
+                property.propertyType == PropertyType.HOUSE.name -> "Casa"
+                property.propertyType == PropertyType.APARTMENT.name -> "Depto"
+                property.propertyType == PropertyType.PRIVATE_ROOM.name -> "Cuarto"
+                property.propertyType == PropertyType.SHARED_ROOM.name -> "Compartido"
+                property.propertyType == PropertyType.STUDIO.name -> "Estudio"
+                property.propertyType == PropertyType.ENTIRE_APARTMENT.name -> "Apartamento"
+                property.propertyType == PropertyType.DORMITORY.name -> "Dormitorio"
+                else -> "Propiedad"
             }
         )
 
@@ -310,6 +316,7 @@ private fun PropertyInfoChips(
         }
     }
 }
+
 
 @Composable
 private fun InfoChip(
@@ -449,7 +456,7 @@ private fun CommentsSection(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        Divider(thickness = 1.dp)
+        HorizontalDivider(thickness = 1.dp)
 
         // Campo para nuevo comentario
         CommentInputSection(
@@ -667,29 +674,6 @@ private fun EmptyCommentsState(
     }
 }
 
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PropertyDetailsBottomSheet(
-    property: Property,
-    onDismiss: () -> Unit,
-    viewModel: RentsViewModel = hiltViewModel()
-) {
-    val bottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = bottomSheetState,
-        modifier = Modifier.fillMaxHeight(0.95f),
-    ) {
-        PropertyDetailsContent(property = property, viewModel = viewModel)
-    }
-}
-
-
 @Composable
 fun PropertyDetailsContent(
     property: Property,
@@ -858,9 +842,6 @@ private fun PropertyHeaderInfo(property: Property) {
     }
 }
 
-
-
-
 @Composable
 private fun PropertyInfoCards(property: Property) {
     Row(
@@ -870,20 +851,26 @@ private fun PropertyInfoCards(property: Property) {
         // Tipo de propiedad
         InfoCard(
             modifier = Modifier.weight(1f),
-            icon = when (PropertyType.valueOf(property.propertyType)) {
-                PropertyType.HOUSE -> Icons.Default.Home
-                PropertyType.APARTMENT -> Icons.Default.Apartment
-                PropertyType.PRIVATE_ROOM -> Icons.Default.Bed
-                PropertyType.SHARED_ROOM -> Icons.Default.Group
-                PropertyType.STUDIO -> Icons.Default.SingleBed
+            icon = when {
+                property.propertyType == PropertyType.HOUSE.name -> Icons.Default.Home
+                property.propertyType == PropertyType.APARTMENT.name -> Icons.Default.Apartment
+                property.propertyType == PropertyType.PRIVATE_ROOM.name -> Icons.Default.Bed
+                property.propertyType == PropertyType.SHARED_ROOM.name -> Icons.Default.Group
+                property.propertyType == PropertyType.STUDIO.name -> Icons.Default.SingleBed
+                property.propertyType == PropertyType.ENTIRE_APARTMENT.name -> Icons.Default.Apartment
+                property.propertyType == PropertyType.DORMITORY.name -> Icons.Default.School
+                else -> Icons.Default.Home
             },
             title = "Tipo",
-            subtitle = when (PropertyType.valueOf(property.propertyType)) {
-                PropertyType.HOUSE -> "Casa"
-                PropertyType.APARTMENT -> "Departamento"
-                PropertyType.PRIVATE_ROOM -> "Cuarto privado"
-                PropertyType.SHARED_ROOM -> "Cuarto compartido"
-                PropertyType.STUDIO -> "Estudio"
+            subtitle = when {
+                property.propertyType == PropertyType.HOUSE.name -> "Casa"
+                property.propertyType == PropertyType.APARTMENT.name -> "Departamento"
+                property.propertyType == PropertyType.PRIVATE_ROOM.name -> "Cuarto privado"
+                property.propertyType == PropertyType.SHARED_ROOM.name -> "Cuarto compartido"
+                property.propertyType == PropertyType.STUDIO.name -> "Estudio"
+                property.propertyType == PropertyType.ENTIRE_APARTMENT.name -> "Apartamento completo"
+                property.propertyType == PropertyType.DORMITORY.name -> "Dormitorio"
+                else -> "Propiedad"
             }
         )
 
@@ -1241,10 +1228,10 @@ private fun ContactItem(
     }
 }
 
-// Reutilizar el componente ImageCarousel existente pero con mejoras
+// ImageCarousel corregido para usar List<String>
 @Composable
 fun ImageCarousel(
-    images: List<PropertyImage>,
+    images: List<String>,
     modifier: Modifier = Modifier
 ) {
     var currentImageIndex by remember { mutableIntStateOf(0) }
@@ -1252,8 +1239,8 @@ fun ImageCarousel(
     Box(modifier = modifier) {
         // Imagen actual
         AsyncImage(
-            model = images[currentImageIndex].imageUrl,
-            contentDescription = images[currentImageIndex].caption,
+            model = images[currentImageIndex],
+            contentDescription = "Imagen ${currentImageIndex + 1}",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )

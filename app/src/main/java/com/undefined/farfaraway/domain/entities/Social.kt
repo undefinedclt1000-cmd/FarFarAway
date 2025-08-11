@@ -10,7 +10,7 @@ data class PropertyLike(
 ) {
     constructor() : this("", "", "")
 }
-
+/*
 data class Comment(
     @get:PropertyName("id") val id: String = "",
     @get:PropertyName("user_id") val userId: String = "",
@@ -24,6 +24,8 @@ data class Comment(
 ) {
     constructor() : this("", "", "", "", "", 0, false, "", "")
 }
+
+ */
 
 data class Review(
     @get:PropertyName("id") val id: String = "",
